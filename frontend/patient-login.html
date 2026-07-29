@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Gimbie Hospital</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="auth.css" />
+</head>
+<body>
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">🏥</div>
+            <div class="loader-text">Loading...</div>
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div id="header"></div>
+
+    <!-- Auth Section -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-wrapper">
+                <div class="auth-card glass">
+                    <div class="auth-header">
+                        <div class="auth-logo">🏥</div>
+                        <h2>Welcome Back</h2>
+                        <p>Sign in to access your health records and appointments</p>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-tab="login">Login</button>
+                        <button class="auth-tab" data-tab="register">Register</button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="loginForm" class="auth-form active">
+                        <div class="form-group">
+                            <label for="loginEmail">Email Address</label>
+                            <input type="email" id="loginEmail" placeholder="Enter your email" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Password</label>
+                            <input type="password" id="loginPassword" placeholder="Enter your password" required />
+                            <span class="password-toggle" onclick="togglePassword('loginPassword')">👁️</span>
+                        </div>
+                        <div class="form-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" /> Remember me
+                            </label>
+                            <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-large btn-full">
+                            <span class="btn-icon">🔑</span> Sign In
+                        </button>
+                        <div class="auth-divider">
+                            <span>or continue with</span>
+                        </div>
+                        <div class="social-login">
+                            <button type="button" class="social-btn google">Google</button>
+                            <button type="button" class="social-btn facebook">Facebook</button>
+                        </div>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form id="registerForm" class="auth-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="regFirstName">First Name</label>
+                                <input type="text" id="regFirstName" placeholder="First name" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="regLastName">Last Name</label>
+                                <input type="text" id="regLastName" placeholder="Last name" required />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="regEmail">Email Address</label>
+                            <input type="email" id="regEmail" placeholder="Enter your email" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="regPhone">Phone Number</label>
+                            <input type="tel" id="regPhone" placeholder="Enter your phone number" required />
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="regDob">Date of Birth</label>
+                                <input type="date" id="regDob" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="regGender">Gender</label>
+                                <select id="regGender" required>
+                                    <option value="">Select</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="regPassword">Password</label>
+                            <input type="password" id="regPassword" placeholder="Create a password (min 8 characters)" required />
+                            <span class="password-toggle" onclick="togglePassword('regPassword')">👁️</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="regConfirmPassword">Confirm Password</label>
+                            <input type="password" id="regConfirmPassword" placeholder="Confirm your password" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="regAddress">Address (Optional)</label>
+                            <input type="text" id="regAddress" placeholder="Enter your address" />
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="regEmergencyContact">Emergency Contact Name</label>
+                                <input type="text" id="regEmergencyContact" placeholder="Name" />
+                            </div>
+                            <div class="form-group">
+                                <label for="regEmergencyPhone">Emergency Contact Phone</label>
+                                <input type="tel" id="regEmergencyPhone" placeholder="Phone number" />
+                            </div>
+                        </div>
+                        <div class="form-agreement">
+                            <label class="checkbox-label">
+                                <input type="checkbox" required /> I agree to the 
+                                <a href="#" target="_blank">Terms of Service</a> and 
+                                <a href="#" target="_blank">Privacy Policy</a>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-large btn-full">
+                            <span class="btn-icon">📝</span> Create Account
+                        </button>
+                    </form>
+                </div>
+
+                <div class="auth-side">
+                    <div class="auth-side-content">
+                        <h3>🏥 Gimbie Adventist Hospital</h3>
+                        <p>Access your health records, book appointments, and manage your healthcare journey.</p>
+                        <div class="auth-features">
+                            <div class="auth-feature">
+                                <span>📅</span>
+                                <span>Book appointments online</span>
+                            </div>
+                            <div class="auth-feature">
+                                <span>📋</span>
+                                <span>View medical records</span>
+                            </div>
+                            <div class="auth-feature">
+                                <span>💊</span>
+                                <span>Manage prescriptions</span>
+                            </div>
+                            <div class="auth-feature">
+                                <span>🔬</span>
+                                <span>Access lab results</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <div id="footer"></div>
+
+    <script src="components/header.html.js"></script>
+    <script src="components/footer.html.js"></script>
+    <script src="api.js"></script>
+    <script src="auth.js"></script>
+    <script src="auth-page.js"></script>
+    <script src="main.js"></script>
+</body>
+  </html>
