@@ -1,7 +1,7 @@
 // ============ API Configuration ============
 const API_BASE_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:5000/api' 
-    : 'https://gimbie-hospital-backend.onrender.com/api';
+    : 'https://ghimbi-adventist-general-hospital.onrender.com/api';
 
 const API = {
     // Auth
