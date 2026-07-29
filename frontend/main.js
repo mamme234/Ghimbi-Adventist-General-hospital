@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loader) {
             loader.classList.add('hidden');
         }
-    }, 1000);
+    }, 1500);
 
     // Initialize features
     initStatsCounter();
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initScrollProgress();
     initThemeToggle();
     initGetStarted();
+    updateGetStartedAuth();
 
     // Load dynamic content
     if (document.getElementById('departmentsGrid')) {
@@ -33,9 +34,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update auth links
     updateAuthLinks();
-
-    // Update get started buttons based on auth status
-    updateGetStartedAuth();
 });
 
 // ============ Update Auth Links ============
@@ -81,10 +79,16 @@ function updateGetStartedAuth() {
     const loginBtn = document.querySelector('.get-started-btn.login-btn');
     const registerBtn = document.querySelector('.get-started-btn.register-btn');
     const dashboardBtn = document.getElementById('dashboardQuickLink');
+    const getStartedOptions = document.getElementById('getStartedOptions');
+
+    if (!getStartedOptions) return;
 
     if (isLoggedIn) {
+        // Hide login and register buttons
         if (loginBtn) loginBtn.style.display = 'none';
         if (registerBtn) registerBtn.style.display = 'none';
+        
+        // Show dashboard button
         if (dashboardBtn) {
             dashboardBtn.style.display = 'flex';
             const user = getCurrentUser();
@@ -99,18 +103,30 @@ function updateGetStartedAuth() {
                 'finance': 'finance-dashboard.html'
             };
             dashboardBtn.href = roleMap[user?.role] || 'patient-dashboard.html';
+            
+            // Update text
+            const name = user?.firstName || 'Patient';
+            dashboardBtn.querySelector('strong').textContent = `Welcome, ${name}`;
+            dashboardBtn.querySelector('span:last-child').textContent = 'Go to your dashboard';
         }
     } else {
+        // Show login and register buttons
         if (loginBtn) loginBtn.style.display = 'flex';
         if (registerBtn) registerBtn.style.display = 'flex';
         if (dashboardBtn) dashboardBtn.style.display = 'none';
     }
 }
 
-// ============ Get Started Section ============
+// ============ Init Get Started ============
 function initGetStarted() {
-    // Already handled by updateGetStartedAuth()
-    // Additional get started features can be added here
+    // Add click tracking for get started buttons
+    const getStartedBtns = document.querySelectorAll('.get-started-btn');
+    getStartedBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const label = this.querySelector('strong')?.textContent || 'Get Started';
+            console.log(`Get Started: ${label} clicked`);
+        });
+    });
 }
 
 // ============ Stats Counter ============
@@ -194,7 +210,6 @@ function initThemeToggle() {
     const themeToggle = document.getElementById('themeToggle');
     if (!themeToggle) return;
 
-    // Check saved theme
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
@@ -355,49 +370,8 @@ function initAIAssistant() {
                 • Book appointments directly with your chosen doctor`;
         }
         
-        if (lower.includes('visiting') || lower.includes('hour') || lower.includes('time') || lower.includes('when')) {
-            return `Visiting Hours:<br>
-                • General Wards: 10:00 AM - 12:00 PM & 4:00 PM - 6:00 PM<br>
-                • ICU: 11:00 AM - 12:00 PM & 5:00 PM - 6:00 PM<br>
-                • Maternity: 10:00 AM - 11:00 AM & 4:00 PM - 5:00 PM<br>
-                • Emergency: 24/7 for emergencies<br><br>
-                Please check with the ward for any special visiting guidelines.`;
-        }
-        
-        if (lower.includes('emergency') || lower.includes('urgent') || lower.includes('help') || lower.includes('ambulance')) {
-            return `🚑 <strong>Emergency Services</strong><br><br>
-                For immediate medical assistance:<br>
-                • Call our emergency hotline: +251-XXX-XXXXXX<br>
-                • Visit our 24/7 Emergency Department<br>
-                • Ambulance service available<br><br>
-                <a href="emergency.html" class="btn btn-emergency btn-small">Get Emergency Help</a>`;
-        }
-        
-        if (lower.includes('lab') || lower.includes('test') || lower.includes('result')) {
-            return `🔬 <strong>Laboratory Services</strong><br><br>
-                Our laboratory offers:<br>
-                • Blood tests (CBC, Blood Sugar, etc.)<br>
-                • Urine and stool analysis<br>
-                • Microbiology tests<br>
-                • Pathology services<br>
-                • COVID-19 testing<br>
-                • And more...<br><br>
-                Results are typically available within 24-48 hours.`;
-        }
-        
-        if (lower.includes('pharmacy') || lower.includes('medicine') || lower.includes('drug') || lower.includes('prescription')) {
-            return `💊 <strong>Pharmacy Services</strong><br><br>
-                Our hospital pharmacy provides:<br>
-                • Prescription dispensing<br>
-                • Medicine availability check<br>
-                • Refill requests<br>
-                • Medication counseling<br><br>
-                The pharmacy is open 8:00 AM - 8:00 PM daily.`;
-        }
-        
         if (lower.includes('login') || lower.includes('sign up') || lower.includes('register') || lower.includes('account')) {
             return `🔑 <strong>Patient Portal Access</strong><br><br>
-                To access your patient portal:<br><br>
                 <strong>Login</strong><br>
                 • Use your Patient ID or Email<br>
                 • Enter your password<br>
@@ -407,20 +381,6 @@ function initAIAssistant() {
                 • Create your account in minutes<br>
                 • Start managing your health online<br><br>
                 <a href="patient-login.html" class="btn btn-primary btn-small">Go to Login</a>`;
-        }
-        
-        if (lower.includes('about') || lower.includes('history') || lower.includes('mission')) {
-            return `🏥 <strong>About Gimbie Adventist General Hospital</strong><br><br>
-                Founded in 1960, Gimbie Adventist Hospital has been serving the community with excellence in healthcare for over 60 years.<br><br>
-                <strong>Our Mission:</strong><br>
-                To provide quality, compassionate healthcare to all, regardless of their background or ability to pay.<br><br>
-                <strong>Our Values:</strong><br>
-                • Excellence in Patient Care<br>
-                • Compassion and Respect<br>
-                • Community Service<br>
-                • Medical Excellence<br>
-                • Innovation and Technology<br><br>
-                <a href="about.html">Learn more about us →</a>`;
         }
         
         return `Thank you for your question! I'm here to help.<br><br>
@@ -584,7 +544,7 @@ function showToast(message, type = 'success', duration = 3000) {
         right: 20px;
         padding: 16px 24px;
         border-radius: 12px;
-        font-family: var(--font-secondary);
+        font-family: var(--font-body);
         font-weight: 500;
         z-index: 9999;
         transform: translateX(120%);
