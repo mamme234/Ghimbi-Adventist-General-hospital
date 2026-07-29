@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Gimbie Adventist General Hospital - World-class healthcare services in Gimbie, Ethiopia. Quality medical care with compassion and excellence since 1960." />
+    <meta name="description" content="Gimbie Adventist General Hospital - World-class healthcare services in Gimbie, Ethiopia." />
     <meta name="keywords" content="Gimbie Hospital, Adventist Hospital, Medical Care, Healthcare Ethiopia" />
     <meta name="author" content="Gimbie Adventist General Hospital" />
     <meta name="theme-color" content="#0a1628" />
@@ -103,16 +103,11 @@
                 <!-- Navigation -->
                 <nav class="header-nav" id="headerNav">
                     <a href="index.html" class="active">Home</a>
-                    <a href="about.html">About</a>
-                    <a href="departments.html">Departments</a>
-                    <a href="doctors.html">Doctors</a>
-                    <a href="services.html">Services</a>
-                    <a href="appointments.html">Appointments</a>
-                    <a href="laboratory.html">Laboratory</a>
-                    <a href="pharmacy.html">Pharmacy</a>
-                    <a href="careers.html">Careers</a>
-                    <a href="news.html">News</a>
-                    <a href="contact.html">Contact</a>
+                    <a href="#services">Services</a>
+                    <a href="#departments">Departments</a>
+                    <a href="#doctors">Doctors</a>
+                    <a href="#appointments">Appointments</a>
+                    <a href="#contact">Contact</a>
                     
                     <div class="nav-actions">
                         <button class="nav-search" id="searchToggle" aria-label="Search">
@@ -124,7 +119,7 @@
                         <div class="nav-auth" id="navAuth">
                             <!-- Will be dynamically updated by main.js -->
                         </div>
-                        <a href="appointments.html" class="btn btn-primary btn-small btn-book">Book Appointment</a>
+                        <a href="#appointments" class="btn btn-primary btn-small btn-book">Book Appointment</a>
                     </div>
                 </nav>
 
@@ -173,13 +168,13 @@
                 </p>
 
                 <div class="hero-actions">
-                    <a href="appointments.html" class="btn btn-primary btn-large">
+                    <a href="#appointments" class="btn btn-primary btn-large">
                         <span class="btn-icon">📅</span> Book Appointment
                     </a>
-                    <a href="emergency.html" class="btn btn-emergency btn-large">
+                    <a href="#emergency" class="btn btn-emergency btn-large">
                         <span class="btn-icon">🚑</span> Emergency
                     </a>
-                    <a href="contact.html" class="btn btn-outline btn-large">
+                    <a href="#contact" class="btn btn-outline btn-large">
                         <span class="btn-icon">📞</span> Contact
                     </a>
                     <button class="btn btn-outline btn-large" id="watchVideoBtn">
@@ -187,7 +182,9 @@
                     </button>
                 </div>
 
-                <!-- GET STARTED SECTION -->
+                <!-- ============================================================ -->
+                <!-- GET STARTED - LOGIN & SIGNUP BUILT-IN -->
+                <!-- ============================================================ -->
                 <div class="hero-get-started" id="heroGetStarted">
                     <div class="get-started-header">
                         <div class="get-started-badge">
@@ -197,64 +194,94 @@
                         <p class="get-started-subtitle">Access your health records, book appointments, and manage your care</p>
                     </div>
                     
-                    <div class="get-started-options" id="getStartedOptions">
-                        <!-- Login Card -->
-                        <a href="patient-login.html" class="get-started-btn login-btn">
-                            <div class="btn-left">
-                                <span class="btn-icon">🔑</span>
-                                <div>
-                                    <strong>Login</strong>
-                                    <span>Access your health records</span>
-                                </div>
-                            </div>
-                            <span class="get-started-arrow">→</span>
-                        </a>
-                        
-                        <!-- Sign Up Card -->
-                        <a href="patient-signup.html" class="get-started-btn register-btn">
-                            <div class="btn-left">
-                                <span class="btn-icon">📝</span>
-                                <div>
-                                    <strong>Sign Up</strong>
-                                    <span>Create your patient account</span>
-                                </div>
-                            </div>
-                            <span class="get-started-arrow">→</span>
-                        </a>
-                        
-                        <!-- Dashboard Card -->
-                        <a href="patient-dashboard.html" class="get-started-btn dashboard-btn" id="dashboardQuickLink" style="display:none;">
-                            <div class="btn-left">
-                                <span class="btn-icon">📊</span>
-                                <div>
-                                    <strong>Dashboard</strong>
-                                    <span>Go to your dashboard</span>
-                                </div>
-                            </div>
-                            <span class="get-started-arrow">→</span>
-                        </a>
+                    <!-- Login & Signup Tabs -->
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-tab="login">Sign In</button>
+                        <button class="auth-tab" data-tab="signup">Create Account</button>
                     </div>
-                    
-                    <div class="get-started-features">
-                        <div class="feature-item">
-                            <span>📅</span>
-                            <span>Book Appointments</span>
+
+                    <!-- ============ LOGIN FORM ============ -->
+                    <div class="auth-form active" id="loginForm">
+                        <div class="form-group floating">
+                            <input type="text" id="loginIdentifier" placeholder=" " required />
+                            <label>Patient ID / Email / Phone</label>
                         </div>
-                        <div class="feature-divider"></div>
-                        <div class="feature-item">
-                            <span>📋</span>
-                            <span>View Records</span>
+                        <div class="form-group floating">
+                            <input type="password" id="loginPassword" placeholder=" " required />
+                            <label>Password</label>
+                            <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">👁️</button>
                         </div>
-                        <div class="feature-divider"></div>
-                        <div class="feature-item">
-                            <span>💊</span>
-                            <span>Manage Prescriptions</span>
+                        <div class="form-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="rememberMe" />
+                                Remember Me
+                            </label>
+                            <a href="#" class="forgot-link">Forgot Password?</a>
                         </div>
-                        <div class="feature-divider"></div>
-                        <div class="feature-item">
-                            <span>🔬</span>
-                            <span>Lab Results</span>
+                        <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
+                            <span class="btn-icon">🔑</span> Sign In
+                        </button>
+                        <div class="auth-divider"><span>or</span></div>
+                        <div class="social-login">
+                            <button type="button" class="social-btn google">Google</button>
+                            <button type="button" class="social-btn facebook">Facebook</button>
                         </div>
+                    </div>
+
+                    <!-- ============ SIGNUP FORM ============ -->
+                    <div class="auth-form" id="signupForm">
+                        <div class="form-row">
+                            <div class="form-group floating">
+                                <input type="text" id="regFirstName" placeholder=" " required />
+                                <label>First Name</label>
+                            </div>
+                            <div class="form-group floating">
+                                <input type="text" id="regLastName" placeholder=" " required />
+                                <label>Last Name</label>
+                            </div>
+                        </div>
+                        <div class="form-group floating">
+                            <input type="email" id="regEmail" placeholder=" " required />
+                            <label>Email Address</label>
+                        </div>
+                        <div class="form-group floating">
+                            <input type="tel" id="regPhone" placeholder=" " required />
+                            <label>Phone Number</label>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group floating">
+                                <input type="date" id="regDob" placeholder=" " required />
+                                <label>Date of Birth</label>
+                            </div>
+                            <div class="form-group floating">
+                                <select id="regGender" required>
+                                    <option value=""></option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <label>Gender</label>
+                            </div>
+                        </div>
+                        <div class="form-group floating">
+                            <input type="password" id="regPassword" placeholder=" " required minlength="8" />
+                            <label>Create Password</label>
+                            <button type="button" class="password-toggle" onclick="togglePassword('regPassword')">👁️</button>
+                        </div>
+                        <div class="form-group floating">
+                            <input type="password" id="regConfirmPassword" placeholder=" " required />
+                            <label>Confirm Password</label>
+                            <button type="button" class="password-toggle" onclick="togglePassword('regConfirmPassword')">👁️</button>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="regTerms" required />
+                                I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full" id="signupBtn">
+                            <span class="btn-icon">📝</span> Create Account
+                        </button>
                     </div>
                 </div>
 
@@ -296,38 +323,38 @@
     <!-- ============================================================ -->
     <!-- QUICK SERVICES -->
     <!-- ============================================================ -->
-    <section class="quick-services section">
+    <section class="quick-services section" id="services">
         <div class="container">
             <div class="quick-services-grid">
-                <a href="emergency.html" class="quick-service glass">
+                <a href="#emergency" class="quick-service glass">
                     <span class="quick-icon">🚑</span>
                     <span class="quick-label">Emergency Care</span>
                 </a>
-                <a href="appointments.html" class="quick-service glass">
+                <a href="#appointments" class="quick-service glass">
                     <span class="quick-icon">📅</span>
                     <span class="quick-label">Book Appointment</span>
                 </a>
-                <a href="doctors.html" class="quick-service glass">
+                <a href="#doctors" class="quick-service glass">
                     <span class="quick-icon">👨‍⚕️</span>
                     <span class="quick-label">Find a Doctor</span>
                 </a>
-                <a href="laboratory.html" class="quick-service glass">
+                <a href="#services" class="quick-service glass">
                     <span class="quick-icon">🔬</span>
                     <span class="quick-label">Laboratory</span>
                 </a>
-                <a href="pharmacy.html" class="quick-service glass">
+                <a href="#services" class="quick-service glass">
                     <span class="quick-icon">💊</span>
                     <span class="quick-label">Pharmacy</span>
                 </a>
-                <a href="services.html" class="quick-service glass">
+                <a href="#services" class="quick-service glass">
                     <span class="quick-icon">🩺</span>
                     <span class="quick-label">Health Packages</span>
                 </a>
-                <a href="emergency.html" class="quick-service glass">
+                <a href="#emergency" class="quick-service glass">
                     <span class="quick-icon">🚗</span>
                     <span class="quick-label">Ambulance</span>
                 </a>
-                <a href="patient-login.html" class="quick-service glass">
+                <a href="#loginForm" class="quick-service glass">
                     <span class="quick-icon">📋</span>
                     <span class="quick-label">Patient Portal</span>
                 </a>
@@ -404,100 +431,157 @@
     </section>
 
     <!-- ============================================================ -->
-    <!-- ABOUT HOSPITAL -->
-    <!-- ============================================================ -->
-    <section class="about-section section section-light" id="about">
-        <div class="container">
-            <div class="about-wrapper">
-                <div class="about-content">
-                    <span class="section-tag">About Us</span>
-                    <h2 class="section-title">Your Health, <span class="highlight">Our Mission</span></h2>
-                    <div class="about-text">
-                        <h3>Our History</h3>
-                        <p>Founded in 1960, Gimbie Adventist General Hospital has been serving the community with excellence in healthcare for over six decades.</p>
-                        
-                        <h3>Our Mission</h3>
-                        <p>To provide quality, compassionate healthcare to all, regardless of their background or ability to pay.</p>
-                        
-                        <h3>Our Vision</h3>
-                        <p>To be a center of excellence in healthcare, recognized for our commitment to patient care, medical innovation, and community service.</p>
-                        
-                        <h3>Core Values</h3>
-                        <ul class="core-values">
-                            <li>❤️ <strong>Compassion</strong> - Treating every patient with kindness and respect</li>
-                            <li>⭐ <strong>Excellence</strong> - Striving for the highest standards in patient care</li>
-                            <li>🤝 <strong>Integrity</strong> - Upholding ethical standards in all we do</li>
-                            <li>💡 <strong>Innovation</strong> - Embracing technology and medical advancements</li>
-                            <li>🌍 <strong>Community</strong> - Serving and uplifting our community</li>
-                        </ul>
-                    </div>
-                    <a href="about.html" class="btn btn-primary">Read More →</a>
-                </div>
-                <div class="about-image glass">
-                    <div class="about-image-placeholder">
-                        <span>🏥</span>
-                        <p>Gimbie Adventist General Hospital</p>
-                        <small>Established 1960</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============================================================ -->
-    <!-- WHY CHOOSE US -->
-    <!-- ============================================================ -->
-    <section class="why-choose-section section section-dark">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Why Choose Us</span>
-                <h2 class="section-title">Excellence in <span class="highlight">Every Aspect</span></h2>
-            </div>
-            <div class="why-choose-grid">
-                <div class="why-card glass">
-                    <span class="why-icon">👨‍⚕️</span>
-                    <h3>Experienced Doctors</h3>
-                    <p>Highly qualified specialists with years of experience.</p>
-                </div>
-                <div class="why-card glass">
-                    <span class="why-icon">🔬</span>
-                    <h3>Modern Equipment</h3>
-                    <p>State-of-the-art medical technology.</p>
-                </div>
-                <div class="why-card glass">
-                    <span class="why-icon">❤️</span>
-                    <h3>Quality Care</h3>
-                    <p>Compassionate, patient-centered care.</p>
-                </div>
-                <div class="why-card glass">
-                    <span class="why-icon">💰</span>
-                    <h3>Affordable Services</h3>
-                    <p>Quality healthcare accessible to all.</p>
-                </div>
-                <div class="why-card glass">
-                    <span class="why-icon">🚑</span>
-                    <h3>24/7 Emergency</h3>
-                    <p>Round-the-clock emergency services.</p>
-                </div>
-                <div class="why-card glass">
-                    <span class="why-icon">⭐</span>
-                    <h3>Trusted Hospital</h3>
-                    <p>Serving the community for over 60 years.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============================================================ -->
     <!-- DEPARTMENTS -->
     <!-- ============================================================ -->
-    <section class="departments-section section section-light">
+    <section class="departments-section section section-light" id="departments">
         <div class="container">
             <div class="section-header">
                 <span class="section-tag">Our Services</span>
                 <h2 class="section-title">Medical <span class="highlight">Departments</span></h2>
+                <p class="section-description">
+                    Comprehensive healthcare services across multiple specialties.
+                </p>
             </div>
             <div class="departments-grid" id="departmentsGrid"></div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- FEATURED DOCTORS -->
+    <!-- ============================================================ -->
+    <section class="doctors-section section section-dark" id="doctors">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Our Team</span>
+                <h2 class="section-title">Featured <span class="highlight">Doctors</span></h2>
+                <p class="section-description">
+                    Meet some of our highly qualified and experienced medical professionals.
+                </p>
+            </div>
+            <div class="doctors-grid" id="doctorsGrid"></div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- TESTIMONIALS -->
+    <!-- ============================================================ -->
+    <section class="testimonials-section section section-light">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Testimonials</span>
+                <h2 class="section-title">What Our <span class="highlight">Patients Say</span></h2>
+                <p class="section-description">
+                    Real stories from real patients about their experience at our hospital.
+                </p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card glass">
+                    <div class="testimonial-rating">★★★★★</div>
+                    <p class="testimonial-text">"The care I received was exceptional. The doctors and nurses were professional, compassionate, and attentive to my needs."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">MK</div>
+                        <div class="author-info">
+                            <span class="author-name">Mulugeta Kebede</span>
+                            <span class="author-role">Patient</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card glass">
+                    <div class="testimonial-rating">★★★★★</div>
+                    <p class="testimonial-text">"The maternity ward is amazing. The staff made me feel safe and comfortable throughout my delivery."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">AT</div>
+                        <div class="author-info">
+                            <span class="author-name">Alem Tsegaye</span>
+                            <span class="author-role">New Mother</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card glass">
+                    <div class="testimonial-rating">★★★★★</div>
+                    <p class="testimonial-text">"The surgical team was excellent. They explained everything clearly and the recovery was smooth."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">BW</div>
+                        <div class="author-info">
+                            <span class="author-name">Berhanu Wondimu</span>
+                            <span class="author-role">Patient</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- CONTACT SECTION -->
+    <!-- ============================================================ -->
+    <section class="contact-section section section-dark" id="contact">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Contact</span>
+                <h2 class="section-title">Get In <span class="highlight">Touch</span></h2>
+                <p class="section-description">
+                    We're here to help. Reach out to us anytime.
+                </p>
+            </div>
+            <div class="contact-wrapper">
+                <div class="contact-info glass">
+                    <h3>📞 Contact Information</h3>
+                    <div class="contact-item">
+                        <span class="contact-item-icon">📞</span>
+                        <div>
+                            <strong>Phone</strong>
+                            <p>+251-XXX-XXXXXX</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-item-icon">📧</span>
+                        <div>
+                            <strong>Email</strong>
+                            <p>info@gimbiehospital.org</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-item-icon">📍</span>
+                        <div>
+                            <strong>Address</strong>
+                            <p>Gimbie, Ethiopia</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-item-icon">🕐</span>
+                        <div>
+                            <strong>Working Hours</strong>
+                            <p>Monday - Friday: 8:00 AM - 5:00 PM</p>
+                            <p>Emergency: 24/7</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="contact-form glass">
+                    <h3>📝 Send a Message</h3>
+                    <form id="contactForm">
+                        <div class="form-group">
+                            <label for="contactName">Your Name</label>
+                            <input type="text" id="contactName" placeholder="Enter your full name" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">Email Address</label>
+                            <input type="email" id="contactEmail" placeholder="Enter your email" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="contactSubject">Subject</label>
+                            <input type="text" id="contactSubject" placeholder="What is this about?" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="contactMessage">Message</label>
+                            <textarea id="contactMessage" rows="4" placeholder="Your message here..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <span class="btn-icon">📨</span> Send Message
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -520,10 +604,11 @@
                 <div class="footer-section">
                     <h4>Quick Links</h4>
                     <ul>
-                        <li><a href="about.html">About Us</a></li>
-                        <li><a href="departments.html">Departments</a></li>
-                        <li><a href="doctors.html">Doctors</a></li>
-                        <li><a href="appointments.html">Appointments</a></li>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#services">Services</a></li>
+                        <li><a href="#departments">Departments</a></li>
+                        <li><a href="#doctors">Doctors</a></li>
+                        <li><a href="#contact">Contact</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
@@ -540,7 +625,7 @@
                     <div class="footer-emergency">
                         <span class="emergency-number">🚑 911</span>
                         <p>Emergency Hotline</p>
-                        <a href="emergency.html" class="btn btn-emergency btn-small">Get Help Now</a>
+                        <a href="#emergency" class="btn btn-emergency btn-small">Get Help Now</a>
                     </div>
                 </div>
             </div>
@@ -555,7 +640,7 @@
     <!-- ============================================================ -->
     <button class="scroll-top" id="scrollTopBtn">↑</button>
     <button class="floating-ai" id="aiAssistantBtn">🤖</button>
-    <a href="emergency.html" class="floating-emergency">🚑</a>
+    <a href="#emergency" class="floating-emergency">🚑</a>
 
     <!-- ============================================================ -->
     <!-- AI ASSISTANT MODAL -->
@@ -591,4 +676,4 @@
     <script src="map.js"></script>
     <script src="main.js"></script>
 </body>
-    </html>
+</html>
