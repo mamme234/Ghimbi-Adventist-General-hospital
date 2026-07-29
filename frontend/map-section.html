@@ -1,0 +1,178 @@
+<!-- ============ Map Section ============ -->
+<section class="map-section" id="location">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-tag">📍 Location</span>
+            <h2 class="section-title">Find Us <span class="highlight">Easily</span></h2>
+            <p class="section-description">
+                Located in the heart of Gimbie, we're easily accessible from all directions.
+            </p>
+        </div>
+
+        <div class="map-wrapper">
+            <!-- Map Container -->
+            <div class="map-container glass">
+                <div class="map-overlay">
+                    <div class="map-badge">
+                        <span class="badge-pulse">📍</span>
+                        Gimbie Adventist General Hospital
+                    </div>
+                </div>
+                <iframe
+                    src="https://www.google.com/maps?q=Gimbie+Adventist+General+Hospital,+Gimbie,+Ethiopia&output=embed"
+                    width="100%"
+                    height="500"
+                    style="border:0; border-radius:20px;"
+                    loading="lazy"
+                    allowfullscreen
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+
+            <!-- Map Info Grid -->
+            <div class="map-info-grid">
+                <!-- Get Directions -->
+                <div class="map-info-card glass">
+                    <div class="map-info-icon">🗺️</div>
+                    <h4>Get Directions</h4>
+                    <p>Open in Google Maps for turn-by-turn navigation</p>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=Gimbie+Adventist+General+Hospital,+Gimbie,+Ethiopia" 
+                       target="_blank" 
+                       class="btn btn-primary btn-small btn-full">
+                        <span class="btn-icon">🚗</span> Get Directions
+                    </a>
+                </div>
+
+                <!-- GPS Coordinates -->
+                <div class="map-info-card glass">
+                    <div class="map-info-icon">📡</div>
+                    <h4>GPS Coordinates</h4>
+                    <div class="gps-coords">
+                        <span class="coord">9°42'36.0"N</span>
+                        <span class="coord">35°50'24.0"E</span>
+                    </div>
+                    <button class="btn btn-outline btn-small btn-full" onclick="copyCoordinates()">
+                        <span class="btn-icon">📋</span> Copy Coordinates
+                    </button>
+                </div>
+
+                <!-- Parking Information -->
+                <div class="map-info-card glass">
+                    <div class="map-info-icon">🅿️</div>
+                    <h4>Parking Information</h4>
+                    <div class="parking-info">
+                        <div class="parking-item">
+                            <span class="parking-icon">🚗</span>
+                            <div>
+                                <strong>Visitor Parking</strong>
+                                <span>200+ spaces • Free</span>
+                            </div>
+                        </div>
+                        <div class="parking-item">
+                            <span class="parking-icon">🅿️</span>
+                            <div>
+                                <strong>Staff Parking</strong>
+                                <span>150+ spaces • Secure</span>
+                            </div>
+                        </div>
+                        <div class="parking-item">
+                            <span class="parking-icon">♿</span>
+                            <div>
+                                <strong>Accessible Parking</strong>
+                                <span>20 spaces • Near Entrance</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Entrance Information -->
+            <div class="entrance-grid">
+                <div class="entrance-card glass">
+                    <div class="entrance-icon">🚪</div>
+                    <div class="entrance-info">
+                        <h4>Main Reception Entrance</h4>
+                        <p>Main entrance for patients and visitors</p>
+                        <span class="entrance-status open">🟢 Open 24/7</span>
+                    </div>
+                </div>
+
+                <div class="entrance-card glass emergency">
+                    <div class="entrance-icon">🚑</div>
+                    <div class="entrance-info">
+                        <h4>Emergency Entrance</h4>
+                        <p>24/7 Emergency Department access</p>
+                        <span class="entrance-status emergency">🔴 Emergency Only</span>
+                    </div>
+                </div>
+
+                <div class="entrance-card glass">
+                    <div class="entrance-icon">🚑</div>
+                    <div class="entrance-info">
+                        <h4>Ambulance Entrance</h4>
+                        <p>Designated ambulance bay</p>
+                        <span class="entrance-status emergency">🚨 Priority Access</span>
+                    </div>
+                </div>
+
+                <div class="entrance-card glass wheelchair">
+                    <div class="entrance-icon">♿</div>
+                    <div class="entrance-info">
+                        <h4>Accessible Entrance</h4>
+                        <p>Wheelchair accessible with ramp</p>
+                        <span class="entrance-status open">✅ Fully Accessible</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nearby Landmarks -->
+            <div class="landmarks-section glass">
+                <h3>📍 Nearby Landmarks</h3>
+                <div class="landmarks-grid">
+                    <div class="landmark-item">
+                        <span class="landmark-icon">🏛️</span>
+                        <div>
+                            <strong>Gimbie Town Center</strong>
+                            <span>0.5 km • 5 min walk</span>
+                        </div>
+                    </div>
+                    <div class="landmark-item">
+                        <span class="landmark-icon">⛪</span>
+                        <div>
+                            <strong>Gimbie Adventist Church</strong>
+                            <span>0.3 km • 3 min walk</span>
+                        </div>
+                    </div>
+                    <div class="landmark-item">
+                        <span class="landmark-icon">🏫</span>
+                        <div>
+                            <strong>Gimbie High School</strong>
+                            <span>1.2 km • 15 min walk</span>
+                        </div>
+                    </div>
+                    <div class="landmark-item">
+                        <span class="landmark-icon">🛒</span>
+                        <div>
+                            <strong>Gimbie Market</strong>
+                            <span>0.8 km • 10 min walk</span>
+                        </div>
+                    </div>
+                    <div class="landmark-item">
+                        <span class="landmark-icon">🚌</span>
+                        <div>
+                            <strong>Gimbie Bus Station</strong>
+                            <span>1.0 km • 12 min walk</span>
+                        </div>
+                    </div>
+                    <div class="landmark-item">
+                        <span class="landmark-icon">🏨</span>
+                        <div>
+                            <strong>Gimbie Hotel</strong>
+                            <span>0.6 km • 7 min walk</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+                      </section>
