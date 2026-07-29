@@ -3,161 +3,198 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - Gimbie Hospital</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+    <title>Patient Login - Gimbie Hospital</title>
+    <meta name="description" content="Secure patient login portal for Gimbie Adventist General Hospital. Access your medical records, appointments, and more." />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="auth.css" />
+    <link rel="stylesheet" href="patient-login.css" />
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
 </head>
 <body>
-    <!-- Loader -->
+
+    <!-- ============ LOADER ============ -->
     <div id="loader">
         <div class="loader-content">
             <div class="loader-logo">🏥</div>
-            <div class="loader-text">Loading...</div>
+            <div class="loader-text">Gimbie Adventist Hospital</div>
             <div class="loader-spinner"></div>
         </div>
     </div>
 
-    <!-- Header -->
-    <div id="header"></div>
+    <!-- ============ LOGIN SECTION ============ -->
+    <section class="login-section">
+        <div class="login-background">
+            <div class="login-overlay"></div>
+            <div class="login-particles"></div>
+        </div>
 
-    <!-- Auth Section -->
-    <section class="auth-section">
         <div class="container">
-            <div class="auth-wrapper">
-                <div class="auth-card glass">
-                    <div class="auth-header">
-                        <div class="auth-logo">🏥</div>
-                        <h2>Welcome Back</h2>
-                        <p>Sign in to access your health records and appointments</p>
+            <div class="login-wrapper">
+                <!-- Login Card -->
+                <div class="login-card glass">
+                    <div class="login-header">
+                        <img src="assets/logo.png" alt="Gimbie Hospital Logo" class="login-logo" />
+                        <h1>Welcome Back</h1>
+                        <p>Sign in to access your health records and manage your care</p>
                     </div>
 
-                    <!-- Tabs -->
-                    <div class="auth-tabs">
-                        <button class="auth-tab active" data-tab="login">Login</button>
-                        <button class="auth-tab" data-tab="register">Register</button>
+                    <!-- Login Options -->
+                    <div class="login-options">
+                        <button class="login-option active" data-option="patient-id">
+                            <span class="option-icon">🆔</span>
+                            Patient ID
+                        </button>
+                        <button class="login-option" data-option="mrn">
+                            <span class="option-icon">📋</span>
+                            MRN
+                        </button>
+                        <button class="login-option" data-option="phone">
+                            <span class="option-icon">📱</span>
+                            Phone
+                        </button>
+                        <button class="login-option" data-option="email">
+                            <span class="option-icon">✉️</span>
+                            Email
+                        </button>
                     </div>
 
                     <!-- Login Form -->
-                    <form id="loginForm" class="auth-form active">
-                        <div class="form-group">
-                            <label for="loginEmail">Email Address</label>
-                            <input type="email" id="loginEmail" placeholder="Enter your email" required />
+                    <form id="loginForm" class="login-form">
+                        <div class="form-group floating">
+                            <input type="text" id="loginIdentifier" placeholder=" " required />
+                            <label id="identifierLabel">Patient ID</label>
                         </div>
-                        <div class="form-group">
-                            <label for="loginPassword">Password</label>
-                            <input type="password" id="loginPassword" placeholder="Enter your password" required />
-                            <span class="password-toggle" onclick="togglePassword('loginPassword')">👁️</span>
+
+                        <div class="form-group floating">
+                            <input type="password" id="loginPassword" placeholder=" " required />
+                            <label>Password</label>
+                            <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle password visibility">
+                                👁️
+                            </button>
                         </div>
+
                         <div class="form-options">
                             <label class="checkbox-label">
-                                <input type="checkbox" /> Remember me
+                                <input type="checkbox" id="rememberMe" />
+                                Remember Me
                             </label>
-                            <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
+                            <div class="forgot-links">
+                                <a href="#" class="forgot-link" id="forgotPassword">Forgot Password?</a>
+                                <span class="divider">|</span>
+                                <a href="#" class="forgot-link" id="forgotPatientId">Forgot Patient ID?</a>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-large btn-full">
+
+                        <button type="submit" class="btn btn-primary btn-large btn-full" id="loginBtn">
                             <span class="btn-icon">🔑</span> Sign In
                         </button>
-                        <div class="auth-divider">
+
+                        <!-- Two-Factor Authentication -->
+                        <div class="two-factor-section" id="twoFactorSection" style="display: none;">
+                            <div class="two-factor-header">
+                                <span class="two-factor-icon">🔐</span>
+                                <h4>Two-Factor Authentication</h4>
+                                <p>Enter the 6-digit code sent to your phone</p>
+                            </div>
+                            <div class="otp-inputs">
+                                <input type="text" maxlength="1" class="otp-input" />
+                                <input type="text" maxlength="1" class="otp-input" />
+                                <input type="text" maxlength="1" class="otp-input" />
+                                <input type="text" maxlength="1" class="otp-input" />
+                                <input type="text" maxlength="1" class="otp-input" />
+                                <input type="text" maxlength="1" class="otp-input" />
+                            </div>
+                            <button type="button" class="btn btn-outline btn-small btn-full" id="verifyOtpBtn">
+                                Verify OTP
+                            </button>
+                            <p class="resend-otp">Didn't receive code? <a href="#" id="resendOtp">Resend</a></p>
+                        </div>
+
+                        <!-- QR Code Login -->
+                        <div class="qr-login-section" id="qrLoginSection" style="display: none;">
+                            <div class="qr-login-header">
+                                <span class="qr-icon">📱</span>
+                                <h4>Scan QR Code</h4>
+                                <p>Scan your patient card QR code with your phone</p>
+                            </div>
+                            <div class="qr-code-display">
+                                <div class="qr-placeholder">
+                                    <span>📷</span>
+                                    <p>Scan QR Code</p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline btn-small btn-full" id="qrLoginBtn">
+                                <span class="btn-icon">📱</span> Scan QR Code
+                            </button>
+                        </div>
+
+                        <div class="login-divider">
                             <span>or continue with</span>
                         </div>
+
                         <div class="social-login">
                             <button type="button" class="social-btn google">Google</button>
                             <button type="button" class="social-btn facebook">Facebook</button>
                         </div>
                     </form>
 
-                    <!-- Register Form -->
-                    <form id="registerForm" class="auth-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="regFirstName">First Name</label>
-                                <input type="text" id="regFirstName" placeholder="First name" required />
-                            </div>
-                            <div class="form-group">
-                                <label for="regLastName">Last Name</label>
-                                <input type="text" id="regLastName" placeholder="Last name" required />
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="regEmail">Email Address</label>
-                            <input type="email" id="regEmail" placeholder="Enter your email" required />
-                        </div>
-                        <div class="form-group">
-                            <label for="regPhone">Phone Number</label>
-                            <input type="tel" id="regPhone" placeholder="Enter your phone number" required />
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="regDob">Date of Birth</label>
-                                <input type="date" id="regDob" required />
-                            </div>
-                            <div class="form-group">
-                                <label for="regGender">Gender</label>
-                                <select id="regGender" required>
-                                    <option value="">Select</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="regPassword">Password</label>
-                            <input type="password" id="regPassword" placeholder="Create a password (min 8 characters)" required />
-                            <span class="password-toggle" onclick="togglePassword('regPassword')">👁️</span>
-                        </div>
-                        <div class="form-group">
-                            <label for="regConfirmPassword">Confirm Password</label>
-                            <input type="password" id="regConfirmPassword" placeholder="Confirm your password" required />
-                        </div>
-                        <div class="form-group">
-                            <label for="regAddress">Address (Optional)</label>
-                            <input type="text" id="regAddress" placeholder="Enter your address" />
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="regEmergencyContact">Emergency Contact Name</label>
-                                <input type="text" id="regEmergencyContact" placeholder="Name" />
-                            </div>
-                            <div class="form-group">
-                                <label for="regEmergencyPhone">Emergency Contact Phone</label>
-                                <input type="tel" id="regEmergencyPhone" placeholder="Phone number" />
-                            </div>
-                        </div>
-                        <div class="form-agreement">
-                            <label class="checkbox-label">
-                                <input type="checkbox" required /> I agree to the 
-                                <a href="#" target="_blank">Terms of Service</a> and 
-                                <a href="#" target="_blank">Privacy Policy</a>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-large btn-full">
-                            <span class="btn-icon">📝</span> Create Account
-                        </button>
-                    </form>
+                    <!-- Register Link -->
+                    <div class="register-link">
+                        Don't have an account? <a href="patient-login.html?register=true">Register Now</a>
+                    </div>
                 </div>
 
-                <div class="auth-side">
-                    <div class="auth-side-content">
-                        <h3>🏥 Gimbie Adventist Hospital</h3>
-                        <p>Access your health records, book appointments, and manage your healthcare journey.</p>
-                        <div class="auth-features">
-                            <div class="auth-feature">
+                <!-- Login Side -->
+                <div class="login-side">
+                    <div class="login-side-content">
+                        <div class="side-badge">🔒 Secure Portal</div>
+                        <h2>Welcome to Your <span>Health Journey</span></h2>
+                        <p>Access your medical records, book appointments, and manage your healthcare all in one place.</p>
+
+                        <div class="side-features">
+                            <div class="side-feature">
                                 <span>📅</span>
-                                <span>Book appointments online</span>
+                                <div>
+                                    <strong>Book Appointments</strong>
+                                    <p>Schedule visits with your doctor online</p>
+                                </div>
                             </div>
-                            <div class="auth-feature">
+                            <div class="side-feature">
                                 <span>📋</span>
-                                <span>View medical records</span>
+                                <div>
+                                    <strong>Medical Records</strong>
+                                    <p>View your complete health history</p>
+                                </div>
                             </div>
-                            <div class="auth-feature">
+                            <div class="side-feature">
                                 <span>💊</span>
-                                <span>Manage prescriptions</span>
+                                <div>
+                                    <strong>Prescriptions</strong>
+                                    <p>Manage your medications and refills</p>
+                                </div>
                             </div>
-                            <div class="auth-feature">
+                            <div class="side-feature">
                                 <span>🔬</span>
-                                <span>Access lab results</span>
+                                <div>
+                                    <strong>Lab Results</strong>
+                                    <p>Access your test results instantly</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="side-emergency">
+                            <span>🚑</span>
+                            <div>
+                                <strong>Emergency?</strong>
+                                <p>Call our 24/7 emergency hotline</p>
+                                <a href="tel:+251-XXX-XXXXXX" class="emergency-phone">+251-XXX-XXXXXX</a>
                             </div>
                         </div>
                     </div>
@@ -166,14 +203,15 @@
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- ============ FOOTER ============ -->
     <div id="footer"></div>
 
+    <!-- ============ SCRIPTS ============ -->
     <script src="components/header.html.js"></script>
     <script src="components/footer.html.js"></script>
     <script src="api.js"></script>
     <script src="auth.js"></script>
-    <script src="auth-page.js"></script>
+    <script src="patient-login.js"></script>
     <script src="main.js"></script>
 </body>
-  </html>
+                            </html>
