@@ -2,6 +2,31 @@
 
 // Load components
 document.addEventListener('DOMContentLoaded', function() {
+    // ============================================================
+    // AUTO-REDIRECT TO DASHBOARD IF LOGGED IN
+    // ============================================================
+    const isLoggedIn = isAuthenticated();
+    const user = getCurrentUser();
+
+    if (isLoggedIn && user) {
+        // Get the correct dashboard URL based on role
+        const roleMap = {
+            'patient': 'patient-dashboard.html',
+            'doctor': 'doctor-dashboard.html',
+            'admin': 'admin-dashboard.html',
+            'nurse': 'nurse-dashboard.html',
+            'reception': 'reception-dashboard.html',
+            'laboratory': 'laboratory-dashboard.html',
+            'pharmacy': 'pharmacy-dashboard.html',
+            'finance': 'finance-dashboard.html'
+        };
+        const dashboardUrl = roleMap[user.role] || 'patient-dashboard.html';
+        
+        // Redirect to dashboard
+        window.location.href = dashboardUrl;
+        return; // Stop execution
+    }
+
     // Hide loader
     setTimeout(() => {
         const loader = document.getElementById('loader');
@@ -32,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadStatistics();
     }
 
-    // Update auth links - ONLY update the nav-auth content, don't reload the entire header
+    // Update auth links
     updateAuthLinks();
 });
 
