@@ -1,0 +1,306 @@
+/* ============ Appointments Page Styles ============ */
+
+.appointments-section {
+    padding: 60px 0 100px;
+    background: #f0f4f8;
+    min-height: calc(100vh - 200px);
+}
+
+.appointments-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.booking-card {
+    padding: 32px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+.booking-header {
+    margin-bottom: 28px;
+}
+
+.booking-header h3 {
+    font-family: var(--font-heading);
+    font-size: 22px;
+    color: var(--primary-dark);
+    margin-bottom: 4px;
+}
+
+.booking-header p {
+    color: #888;
+    font-size: 14px;
+}
+
+.booking-form .form-group {
+    margin-bottom: 20px;
+}
+
+.booking-form .form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--primary-dark);
+    margin-bottom: 6px;
+}
+
+.booking-form .form-group select,
+.booking-form .form-group input,
+.booking-form .form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid rgba(0, 0, 0, 0.06);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-secondary);
+    font-size: 15px;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.booking-form .form-group select:focus,
+.booking-form .form-group input:focus,
+.booking-form .form-group textarea:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(26, 58, 92, 0.06);
+}
+
+.booking-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.booking-form .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+}
+
+.booking-form .checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    flex-shrink: 0;
+}
+
+.booking-form .checkbox-label a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.booking-form .checkbox-label a:hover {
+    text-decoration: underline;
+}
+
+/* Appointments List */
+.appointments-list {
+    padding: 0;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
+}
+
+.appointments-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.appointments-list-header h3 {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    color: var(--primary-dark);
+}
+
+.appointments-filters select {
+    padding: 8px 16px;
+    border: 2px solid rgba(0, 0, 0, 0.06);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-secondary);
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+}
+
+.appointments-list-body {
+    padding: 16px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.appointments-list-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.appointments-list-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 2px;
+}
+
+.appointments-list-body::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 2px;
+}
+
+.appointment-card {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    transition: var(--transition);
+}
+
+.appointment-card:last-child {
+    margin-bottom: 0;
+}
+
+.appointment-card:hover {
+    background: white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.appointment-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.appointment-card-doctor {
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+.appointment-card-status {
+    padding: 2px 12px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.appointment-card-status.pending {
+    background: rgba(247, 183, 49, 0.15);
+    color: #f7b731;
+}
+
+.appointment-card-status.confirmed {
+    background: rgba(52, 199, 89, 0.15);
+    color: #34c759;
+}
+
+.appointment-card-status.completed {
+    background: rgba(74, 158, 255, 0.15);
+    color: #4a9eff;
+}
+
+.appointment-card-status.cancelled {
+    background: rgba(255, 107, 107, 0.15);
+    color: #ff6b6b;
+}
+
+.appointment-card-status.rescheduled {
+    background: rgba(108, 92, 231, 0.15);
+    color: #6c5ce7;
+}
+
+.appointment-card-details {
+    font-size: 14px;
+    color: #666;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.appointment-card-details span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.appointment-card-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+.appointment-card-actions .btn-small {
+    padding: 6px 16px;
+    font-size: 12px;
+}
+
+.btn-reschedule {
+    background: rgba(74, 158, 255, 0.1);
+    color: #4a9eff;
+}
+
+.btn-reschedule:hover {
+    background: #4a9eff;
+    color: white;
+}
+
+.btn-cancel {
+    background: rgba(255, 107, 107, 0.1);
+    color: #ff6b6b;
+}
+
+.btn-cancel:hover {
+    background: #ff6b6b;
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .appointments-wrapper {
+        grid-template-columns: 1fr;
+    }
+    
+    .appointments-list {
+        max-height: 500px;
+    }
+}
+
+@media (max-width: 768px) {
+    .booking-form .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .appointments-list-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .appointment-card-header {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .appointment-card-details {
+        flex-direction: column;
+        gap: 4px;
+    }
+  }
