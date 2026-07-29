@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book Appointment - Gimbie Hospital</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="appointments.css" />
+</head>
+<body>
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">🏥</div>
+            <div class="loader-text">Loading...</div>
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div id="header"></div>
+
+    <!-- Appointments Section -->
+    <section class="appointments-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Book Now</span>
+                <h2 class="section-title">Schedule Your Appointment</h2>
+                <p class="section-description">
+                    Choose your department, doctor, and preferred time for your visit.
+                </p>
+            </div>
+
+            <div class="appointments-wrapper">
+                <!-- Booking Form -->
+                <div class="booking-card glass">
+                    <div class="booking-header">
+                        <h3>📅 Book an Appointment</h3>
+                        <p>Fill in the details below to schedule your visit</p>
+                    </div>
+
+                    <form id="appointmentForm" class="booking-form">
+                        <div class="form-group">
+                            <label for="appointmentDepartment">Department</label>
+                            <select id="appointmentDepartment" required>
+                                <option value="">Select Department</option>
+                                <!-- Will be loaded dynamically -->
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="appointmentDoctor">Doctor</label>
+                            <select id="appointmentDoctor" required>
+                                <option value="">Select Doctor</option>
+                                <!-- Will be loaded dynamically -->
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="appointmentDate">Date</label>
+                                <input type="date" id="appointmentDate" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="appointmentTime">Time</label>
+                                <select id="appointmentTime" required>
+                                    <option value="">Select Time</option>
+                                    <!-- Will be loaded dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="appointmentReason">Reason for Visit</label>
+                            <textarea id="appointmentReason" rows="3" placeholder="Briefly describe your reason for visiting"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="appointmentSymptoms">Symptoms (Optional)</label>
+                            <input type="text" id="appointmentSymptoms" placeholder="List any symptoms you're experiencing" />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="appointmentTerms" required />
+                                I agree to the <a href="#" target="_blank">terms and conditions</a> of the hospital
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-large btn-full">
+                            <span class="btn-icon">📅</span> Book Appointment
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Your Appointments -->
+                <div class="appointments-list glass">
+                    <div class="appointments-list-header">
+                        <h3>📋 Your Appointments</h3>
+                        <div class="appointments-filters">
+                            <select id="appointmentFilter">
+                                <option value="all">All</option>
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="appointments-list-body" id="appointmentsList">
+                        <p class="empty-state">No appointments found. Book your first appointment!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <div id="footer"></div>
+
+    <script src="components/header.html.js"></script>
+    <script src="components/footer.html.js"></script>
+    <script src="api.js"></script>
+    <script src="auth.js"></script>
+    <script src="appointments.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
