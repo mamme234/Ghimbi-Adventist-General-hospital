@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Patient Dashboard - Gimbie Hospital</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">🏥</div>
+            <div class="loader-text">Loading Dashboard...</div>
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div id="header"></div>
+
+    <!-- Dashboard -->
+    <section class="dashboard-section">
+        <div class="container">
+            <div class="dashboard-header">
+                <div class="dashboard-greeting">
+                    <h1>Welcome back, <span id="patientName">Patient</span> 👋</h1>
+                    <p>Here's an overview of your health journey at Gimbie Hospital</p>
+                </div>
+                <div class="dashboard-actions">
+                    <a href="appointments.html" class="btn btn-primary">
+                        <span class="btn-icon">📅</span> Book Appointment
+                    </a>
+                    <button onclick="window.print()" class="btn btn-outline">
+                        <span class="btn-icon">🖨️</span> Print
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="dashboard-stats">
+                <div class="stat-card glass">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalAppointments">0</span>
+                        <span class="stat-label">Total Appointments</span>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="stat-icon">🩺</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalConsultations">0</span>
+                        <span class="stat-label">Consultations</span>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="stat-icon">💊</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalPrescriptions">0</span>
+                        <span class="stat-label">Prescriptions</span>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="stat-icon">🔬</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalLabTests">0</span>
+                        <span class="stat-label">Lab Tests</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="dashboard-grid">
+                <!-- Upcoming Appointments -->
+                <div class="dashboard-card glass">
+                    <div class="card-header">
+                        <h3>📅 Upcoming Appointments</h3>
+                        <a href="appointments.html" class="card-link">View All</a>
+                    </div>
+                    <div class="card-body" id="upcomingAppointments">
+                        <p class="empty-state">No upcoming appointments</p>
+                    </div>
+                </div>
+
+                <!-- Recent Consultations -->
+                <div class="dashboard-card glass">
+                    <div class="card-header">
+                        <h3>🩺 Recent Consultations</h3>
+                        <a href="#" class="card-link">View All</a>
+                    </div>
+                    <div class="card-body" id="recentConsultations">
+                        <p class="empty-state">No consultations yet</p>
+                    </div>
+                </div>
+
+                <!-- Active Prescriptions -->
+                <div class="dashboard-card glass">
+                    <div class="card-header">
+                        <h3>💊 Active Prescriptions</h3>
+                        <a href="#" class="card-link">View All</a>
+                    </div>
+                    <div class="card-body" id="activePrescriptions">
+                        <p class="empty-state">No active prescriptions</p>
+                    </div>
+                </div>
+
+                <!-- Recent Lab Results -->
+                <div class="dashboard-card glass">
+                    <div class="card-header">
+                        <h3>🔬 Recent Lab Results</h3>
+                        <a href="#" class="card-link">View All</a>
+                    </div>
+                    <div class="card-body" id="recentLabResults">
+                        <p class="empty-state">No lab results available</p>
+                    </div>
+                </div>
+
+                <!-- Medical Records -->
+                <div class="dashboard-card glass full-width">
+                    <div class="card-header">
+                        <h3>📁 Medical Records</h3>
+                        <button class="btn btn-small btn-outline" onclick="window.location.href='medical-records.html'">
+                            View All Records
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="medical-records-grid">
+                            <div class="record-item glass" onclick="window.location.href='medical-records.html?type=consultations'">
+                                <span class="record-icon">📋</span>
+                                <span class="record-label">Consultations</span>
+                                <span class="record-count" id="recordConsultations">0</span>
+                            </div>
+                            <div class="record-item glass" onclick="window.location.href='medical-records.html?type=lab'">
+                                <span class="record-icon">🔬</span>
+                                <span class="record-label">Lab Reports</span>
+                                <span class="record-count" id="recordLabReports">0</span>
+                            </div>
+                            <div class="record-item glass" onclick="window.location.href='medical-records.html?type=prescriptions'">
+                                <span class="record-icon">💊</span>
+                                <span class="record-label">Prescriptions</span>
+                                <span class="record-count" id="recordPrescriptions">0</span>
+                            </div>
+                            <div class="record-item glass" onclick="window.location.href='medical-records.html?type=billing'">
+                                <span class="record-icon">💰</span>
+                                <span class="record-label">Billing History</span>
+                                <span class="record-count" id="recordBills">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="dashboard-card glass full-width">
+                    <div class="card-header">
+                        <h3>⚡ Quick Actions</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="quick-actions-grid">
+                            <a href="appointments.html" class="quick-action glass">
+                                <span class="action-icon">📅</span>
+                                <span class="action-label">Book Appointment</span>
+                            </a>
+                            <a href="doctors.html" class="quick-action glass">
+                                <span class="action-icon">👨‍⚕️</span>
+                                <span class="action-label">Find Doctor</span>
+                            </a>
+                            <a href="prescriptions.html" class="quick-action glass">
+                                <span class="action-icon">💊</span>
+                                <span class="action-label">My Prescriptions</span>
+                            </a>
+                            <a href="lab-results.html" class="quick-action glass">
+                                <span class="action-icon">🔬</span>
+                                <span class="action-label">Lab Results</span>
+                            </a>
+                            <a href="billing.html" class="quick-action glass">
+                                <span class="action-icon">💰</span>
+                                <span class="action-label">Pay Bills</span>
+                            </a>
+                            <a href="profile.html" class="quick-action glass">
+                                <span class="action-icon">👤</span>
+                                <span class="action-label">My Profile</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <div id="footer"></div>
+
+    <script src="components/header.html.js"></script>
+    <script src="components/footer.html.js"></script>
+    <script src="api.js"></script>
+    <script src="auth.js"></script>
+    <script src="dashboard.js"></script>
+    <script src="main.js"></script>
+</body>
+                      </html>
