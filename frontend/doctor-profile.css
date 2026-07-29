@@ -1,0 +1,325 @@
+/* ========================================
+   DOCTOR PROFILE PAGE
+   ======================================== */
+
+.doctor-profile-section {
+    padding: 120px 0 80px;
+    background: #f0f4f8;
+    min-height: 100vh;
+}
+
+.doctor-profile-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* ============ PROFILE HEADER ============ */
+.profile-header {
+    display: flex;
+    gap: 40px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+    margin-bottom: 30px;
+}
+
+.profile-avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.profile-avatar {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--gold-accent);
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+}
+
+.profile-avatar-placeholder {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 72px;
+    font-weight: 700;
+    color: white;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    border: 4px solid var(--gold-accent);
+}
+
+.profile-status-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    padding: 4px 14px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    border: 2px solid white;
+}
+
+.profile-status-badge.online {
+    background: var(--success);
+    color: white;
+}
+
+.profile-status-badge.offline {
+    background: #999;
+    color: white;
+}
+
+.profile-status-badge.away {
+    background: var(--warning);
+    color: white;
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-name {
+    font-family: var(--font-heading);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--dark-gray);
+    margin-bottom: 4px;
+}
+
+.profile-title {
+    font-size: 18px;
+    color: var(--gold-accent);
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.profile-department {
+    font-size: 15px;
+    color: rgba(var(--dark-gray-rgb), 0.6);
+    margin-bottom: 12px;
+}
+
+.profile-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 24px;
+    font-size: 14px;
+    color: rgba(var(--dark-gray-rgb), 0.7);
+}
+
+.profile-meta-grid .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+/* ============ PROFILE BODY ============ */
+.profile-body {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+
+.profile-main {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.profile-card {
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.profile-card h3 {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    color: var(--dark-gray);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-card p {
+    color: rgba(var(--dark-gray-rgb), 0.7);
+    line-height: 1.8;
+}
+
+/* ============ QUALIFICATIONS ============ */
+.qualifications-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.qualification-tag {
+    padding: 6px 16px;
+    background: rgba(212, 168, 67, 0.08);
+    border: 1px solid rgba(212, 168, 67, 0.1);
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    color: var(--gold-accent);
+}
+
+/* ============ AVAILABILITY ============ */
+.availability-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.availability-day {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+}
+
+.availability-day .day {
+    color: var(--dark-gray);
+    font-weight: 500;
+}
+
+.availability-day .time {
+    color: rgba(var(--dark-gray-rgb), 0.5);
+}
+
+.availability-day.unavailable {
+    opacity: 0.4;
+}
+
+/* ============ SIDEBAR ============ */
+.profile-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.sidebar-card {
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.sidebar-card h4 {
+    font-family: var(--font-heading);
+    font-size: 16px;
+    color: var(--dark-gray);
+    margin-bottom: 12px;
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 14px;
+    color: rgba(var(--dark-gray-rgb), 0.7);
+}
+
+.sidebar-item .item-icon {
+    font-size: 18px;
+    width: 28px;
+}
+
+/* ============ QR CODE ============ */
+.qr-code-container {
+    text-align: center;
+    padding: 16px;
+}
+
+.qr-code {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+    background: white;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+}
+
+.qr-label {
+    font-size: 12px;
+    color: rgba(var(--dark-gray-rgb), 0.4);
+    margin-top: 8px;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1024px) {
+    .profile-body {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 24px;
+    }
+
+    .profile-avatar {
+        width: 140px;
+        height: 140px;
+    }
+
+    .profile-avatar-placeholder {
+        width: 140px;
+        height: 140px;
+        font-size: 56px;
+    }
+
+    .profile-meta-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .profile-actions {
+        justify-content: center;
+    }
+
+    .availability-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-card h3 {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-name {
+        font-size: 24px;
+    }
+
+    .profile-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+   }
