@@ -1,0 +1,103 @@
+/* ============ Contact Page Styles ============ */
+
+.contact-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 40px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.contact-info {
+    padding: 32px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.contact-info h3 {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    color: var(--primary-dark);
+    margin-bottom: 24px;
+}
+
+.contact-item {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+}
+
+.contact-item-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.contact-item strong {
+    display: block;
+    color: var(--primary-dark);
+    margin-bottom: 2px;
+}
+
+.contact-item p {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+}
+
+.contact-form {
+    padding: 32px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.contact-form h3 {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    color: var(--primary-dark);
+    margin-bottom: 24px;
+}
+
+.contact-form .form-group {
+    margin-bottom: 18px;
+}
+
+.contact-form .form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--primary-dark);
+    margin-bottom: 4px;
+}
+
+.contact-form .form-group input,
+.contact-form .form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid rgba(0, 0, 0, 0.06);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-secondary);
+    font-size: 15px;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.contact-form .form-group input:focus,
+.contact-form .form-group textarea:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(26, 58, 92, 0.06);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .contact-wrapper {
+        grid-template-columns: 1fr;
+    }
+  }
