@@ -2985,3 +2985,237 @@ body::before {
         -webkit-text-fill-color: var(--gold) !important;
     }
    }
+/* ============ AUTH TABS ============ */
+.auth-tabs {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-full);
+    padding: var(--space-1);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.auth-tab {
+    flex: 1;
+    padding: var(--space-2) var(--space-4);
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-full);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.auth-tab.active {
+    background: rgba(212, 168, 67, 0.1);
+    color: var(--gold);
+}
+
+.auth-tab:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* ============ AUTH FORMS ============ */
+.auth-form {
+    display: none;
+    animation: fadeInUp 0.3s ease;
+}
+
+.auth-form.active {
+    display: block;
+}
+
+.auth-form .form-group {
+    margin-bottom: var(--space-4);
+    position: relative;
+}
+
+.auth-form .form-group.floating input,
+.auth-form .form-group.floating select {
+    width: 100%;
+    padding: 14px 16px 6px;
+    border: 2px solid rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 15px;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--white);
+}
+
+.auth-form .form-group.floating select {
+    padding-top: 20px;
+    appearance: none;
+}
+
+.auth-form .form-group.floating select option {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.auth-form .form-group.floating input:focus,
+.auth-form .form-group.floating select:focus {
+    border-color: var(--gold);
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(212, 168, 67, 0.06);
+}
+
+.auth-form .form-group.floating label {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.3);
+    transition: var(--transition);
+    pointer-events: none;
+    font-weight: 400;
+}
+
+.auth-form .form-group.floating select ~ label {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.auth-form .form-group.floating input:focus ~ label,
+.auth-form .form-group.floating input:not(:placeholder-shown) ~ label,
+.auth-form .form-group.floating select:focus ~ label,
+.auth-form .form-group.floating select:not([value=""]) ~ label {
+    top: 6px;
+    transform: translateY(0);
+    font-size: 11px;
+    color: var(--gold);
+}
+
+.auth-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+
+.password-toggle {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0.3;
+    transition: var(--transition);
+    color: var(--white);
+}
+
+.password-toggle:hover {
+    opacity: 1;
+}
+
+.auth-form .form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+    font-size: 13px;
+}
+
+.auth-form .form-options .checkbox-label {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+}
+
+.auth-form .form-options .checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--gold);
+}
+
+.auth-form .forgot-link {
+    color: rgba(255, 255, 255, 0.3);
+    text-decoration: none;
+    font-size: 13px;
+    transition: var(--transition);
+}
+
+.auth-form .forgot-link:hover {
+    color: var(--gold);
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    margin: var(--space-4) 0;
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 12px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.auth-divider span {
+    padding: 0 var(--space-4);
+}
+
+.social-login {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+
+.social-btn {
+    padding: var(--space-2);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.02);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.social-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.social-btn.google {
+    color: #ea4335;
+}
+
+.social-btn.google:hover {
+    border-color: rgba(234, 67, 53, 0.2);
+}
+
+.social-btn.facebook {
+    color: #1877f2;
+}
+
+.social-btn.facebook:hover {
+    border-color: rgba(24, 119, 242, 0.2);
+}
+
+/* ============ RESPONSIVE AUTH ============ */
+@media (max-width: 768px) {
+    .auth-form .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .auth-tabs {
+        flex-direction: column;
+        border-radius: var(--radius-md);
+    }
+    
+    .social-login {
+        grid-template-columns: 1fr;
+    }
+       }
