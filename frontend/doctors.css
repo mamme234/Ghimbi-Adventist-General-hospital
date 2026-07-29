@@ -1,0 +1,229 @@
+/* ============ Doctors Page Styles ============ */
+
+.doctors-section {
+    padding: 60px 0 100px;
+    background: #f0f4f8;
+    min-height: calc(100vh - 200px);
+}
+
+.doctors-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 40px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 180px;
+}
+
+.filter-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--primary-dark);
+    margin-bottom: 4px;
+}
+
+.filter-group select,
+.filter-group input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid rgba(0, 0, 0, 0.06);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-secondary);
+    font-size: 14px;
+    transition: var(--transition);
+    background: white;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(26, 58, 92, 0.06);
+}
+
+.doctors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 30px;
+}
+
+.doctor-card {
+    padding: 0;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.doctor-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
+}
+
+.doctor-card-header {
+    padding: 24px 24px 16px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.doctor-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.doctor-info {
+    flex: 1;
+}
+
+.doctor-name {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-bottom: 2px;
+}
+
+.doctor-specialization {
+    font-size: 15px;
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.doctor-department {
+    font-size: 13px;
+    color: #888;
+    margin-top: 2px;
+}
+
+.doctor-card-body {
+    padding: 0 24px 16px;
+}
+
+.doctor-expertise {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.doctor-tag {
+    padding: 2px 12px;
+    background: rgba(26, 58, 92, 0.06);
+    border-radius: 50px;
+    font-size: 12px;
+    color: var(--primary);
+}
+
+.doctor-qualifications {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.doctor-experience {
+    font-size: 14px;
+    color: #888;
+}
+
+.doctor-rating {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+.doctor-stars {
+    color: var(--accent-gold);
+    font-size: 16px;
+}
+
+.doctor-rating-value {
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+.doctor-rating-count {
+    font-size: 13px;
+    color: #888;
+}
+
+.doctor-card-footer {
+    padding: 16px 24px 24px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.doctor-card-footer .btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 14px;
+    min-width: 120px;
+}
+
+/* No results */
+.no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+}
+
+.no-results span {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.no-results h3 {
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .doctors-filters {
+        flex-direction: column;
+    }
+    
+    .filter-group {
+        min-width: 100%;
+    }
+    
+    .doctors-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .doctor-card-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .doctor-card-footer {
+        flex-direction: column;
+    }
+}
