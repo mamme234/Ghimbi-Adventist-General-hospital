@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadStatistics();
     }
 
-    // Update auth links
+    // Update auth links - ONLY update the nav-auth content, don't reload the entire header
     updateAuthLinks();
 });
 
