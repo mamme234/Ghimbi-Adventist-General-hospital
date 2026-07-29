@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>News - Gimbie Hospital</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="pages.css" />
+</head>
+<body>
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">🏥</div>
+            <div class="loader-text">Loading News...</div>
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
+
+    <div id="header"></div>
+
+    <section class="page-section">
+        <div class="container">
+            <div class="page-header">
+                <span class="section-tag">Updates</span>
+                <h1 class="page-title">Latest News</h1>
+                <p class="page-subtitle">Stay updated with the latest news and announcements from Gimbie Hospital</p>
+            </div>
+
+            <div class="news-grid-full" id="newsGridFull">
+                <!-- Will be loaded dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <div id="footer"></div>
+
+    <script src="components/header.html.js"></script>
+    <script src="components/footer.html.js"></script>
+    <script src="api.js"></script>
+    <script src="news.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
