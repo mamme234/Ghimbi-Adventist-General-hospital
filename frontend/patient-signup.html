@@ -1,1 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Patient Sign Up - Gimbie Hospital</title>
+    <meta name="description" content="Create your patient account at Gimbie Adventist General Hospital. Register online to access health records, book appointments, and manage your care." />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="auth.css" />
+    <link rel="stylesheet" href="patient-signup.css" />
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+</head>
+<body>
 
+    <!-- ============ LOADER ============ -->
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">📝</div>
+            <div class="loader-text">Gimbie Adventist Hospital</div>
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
+
+    <!-- ============ HEADER ============ -->
+    <div id="header"></div>
+
+    <!-- ============ SIGNUP SECTION ============ -->
+    <section class="signup-section">
+        <div class="signup-background">
+            <div class="signup-overlay"></div>
+            <div class="signup-particles"></div>
+            <div class="signup-blob signup-blob-1"></div>
+            <div class="signup-blob signup-blob-2"></div>
+        </div>
+
+        <div class="container">
+            <div class="signup-wrapper">
+                <!-- Signup Form -->
+                <div class="signup-card glass-premium">
+                    <div class="signup-header">
+                        <img src="assets/logo.png" alt="Gimbie Hospital Logo" class="signup-logo" />
+                        <h1>Create Your Account</h1>
+                        <p>Register online to access your health records and manage your care</p>
+                    </div>
+
+                    <!-- Progress Steps -->
+                    <div class="signup-steps">
+                        <div class="step active">
+                            <span class="step-number">1</span>
+                            <span class="step-label">Personal Info</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step">
+                            <span class="step-number">2</span>
+                            <span class="step-label">Contact Details</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step">
+                            <span class="step-number">3</span>
+                            <span class="step-label">Security</span>
+                        </div>
+                    </div>
+
+                    <form id="signupForm" class="signup-form">
+                        <!-- Step 1: Personal Information -->
+                        <div class="signup-step-content active" data-step="1">
+                            <div class="form-row">
+                                <div class="form-group floating">
+                                    <input type="text" id="regFirstName" placeholder=" " required />
+                                    <label>First Name</label>
+                                </div>
+                                <div class="form-group floating">
+                                    <input type="text" id="regLastName" placeholder=" " required />
+                                    <label>Last Name</label>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group floating">
+                                    <input type="date" id="regDob" placeholder=" " required />
+                                    <label>Date of Birth</label>
+                                </div>
+                                <div class="form-group floating">
+                                    <select id="regGender" required>
+                                        <option value=""></option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <label>Gender</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group floating">
+                                <select id="regBloodGroup">
+                                    <option value=""></option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                    <option value="Unknown">Unknown</option>
+                                </select>
+                                <label>Blood Group (Optional)</label>
+                            </div>
+
+                            <button type="button" class="btn btn-primary btn-full btn-next" data-next="2">
+                                Next Step →
+                            </button>
+                        </div>
+
+                        <!-- Step 2: Contact Details -->
+                        <div class="signup-step-content" data-step="2">
+                            <div class="form-group floating">
+                                <input type="email" id="regEmail" placeholder=" " required />
+                                <label>Email Address</label>
+                            </div>
+
+                            <div class="form-group floating">
+                                <input type="tel" id="regPhone" placeholder=" " required />
+                                <label>Phone Number</label>
+                            </div>
+
+                            <div class="form-group floating">
+                                <input type="text" id="regAddress" placeholder=" " />
+                                <label>Home Address (Optional)</label>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Emergency Contact</label>
+                                <div class="form-row">
+                                    <div class="form-group floating" style="margin-bottom: 0;">
+                                        <input type="text" id="regEmergencyName" placeholder=" " />
+                                        <label>Full Name</label>
+                                    </div>
+                                    <div class="form-group floating" style="margin-bottom: 0;">
+                                        <input type="tel" id="regEmergencyPhone" placeholder=" " />
+                                        <label>Phone Number</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group floating">
+                                <input type="text" id="regRelationship" placeholder=" " />
+                                <label>Relationship (Optional)</label>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-outline btn-prev" data-prev="1">← Back</button>
+                                <button type="button" class="btn btn-primary btn-next" data-next="3">Next Step →</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Security -->
+                        <div class="signup-step-content" data-step="3">
+                            <div class="form-group floating">
+                                <input type="password" id="regPassword" placeholder=" " required minlength="8" />
+                                <label>Create Password</label>
+                                <button type="button" class="password-toggle" onclick="togglePassword('regPassword')">👁️</button>
+                            </div>
+                            <p class="password-hint">Must be at least 8 characters with uppercase, lowercase, and numbers</p>
+
+                            <div class="form-group floating">
+                                <input type="password" id="regConfirmPassword" placeholder=" " required />
+                                <label>Confirm Password</label>
+                                <button type="button" class="password-toggle" onclick="togglePassword('regConfirmPassword')">👁️</button>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="regTerms" required />
+                                    I agree to the <a href="#" target="_blank">Terms of Service</a> and 
+                                    <a href="#" target="_blank">Privacy Policy</a>
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="regNewsletter" />
+                                    I'd like to receive health updates and newsletters
+                                </label>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-outline btn-prev" data-prev="2">← Back</button>
+                                <button type="submit" class="btn btn-primary btn-full" id="signupSubmitBtn">
+                                    <span class="btn-icon">📝</span> Create Account
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="signup-footer">
+                        <p>Already have an account? <a href="patient-login.html">Sign In</a></p>
+                    </div>
+                </div>
+
+                <!-- Signup Side -->
+                <div class="signup-side">
+                    <div class="signup-side-content">
+                        <div class="side-badge">🌟 Create Account</div>
+                        <h2>Start Your <span>Health Journey</span></h2>
+                        <p>Creating your patient account gives you access to:</p>
+
+                        <div class="side-features">
+                            <div class="side-feature">
+                                <span>📅</span>
+                                <div>
+                                    <strong>Book Appointments</strong>
+                                    <p>Schedule visits with your doctor online</p>
+                                </div>
+                            </div>
+                            <div class="side-feature">
+                                <span>📋</span>
+                                <div>
+                                    <strong>Medical Records</strong>
+                                    <p>View your complete health history</p>
+                                </div>
+                            </div>
+                            <div class="side-feature">
+                                <span>💊</span>
+                                <div>
+                                    <strong>Prescriptions</strong>
+                                    <p>Manage your medications and refills</p>
+                                </div>
+                            </div>
+                            <div class="side-feature">
+                                <span>🔬</span>
+                                <div>
+                                    <strong>Lab Results</strong>
+                                    <p>Access your test results instantly</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="side-security">
+                            <span>🔒</span>
+                            <div>
+                                <strong>Secure & Private</strong>
+                                <p>Your health information is protected with bank-grade encryption</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <div id="footer"></div>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="components/header.html.js"></script>
+    <script src="components/footer.html.js"></script>
+    <script src="api.js"></script>
+    <script src="auth.js"></script>
+    <script src="patient-signup.js"></script>
+    <script src="main.js"></script>
+</body>
+  </html>
