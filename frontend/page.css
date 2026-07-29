@@ -1,0 +1,268 @@
+/* ============ Common Page Styles ============ */
+
+.page-section {
+    padding: 60px 0 100px;
+    background: #f0f4f8;
+    min-height: calc(100vh - 200px);
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.page-title {
+    font-family: var(--font-heading);
+    font-size: clamp(36px, 4vw, 48px);
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+}
+
+.page-subtitle {
+    font-size: 18px;
+    color: #666;
+}
+
+/* Content Grid */
+.content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.content-card {
+    padding: 32px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+}
+
+.content-card:last-child {
+    margin-bottom: 0;
+}
+
+.content-card h2 {
+    font-family: var(--font-heading);
+    font-size: 24px;
+    color: var(--primary-dark);
+    margin-bottom: 12px;
+}
+
+.content-card h3 {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+}
+
+.content-card p {
+    color: #444;
+    line-height: 1.8;
+    margin-bottom: 12px;
+}
+
+.content-card p:last-child {
+    margin-bottom: 0;
+}
+
+/* Sidebar */
+.sidebar-card {
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+}
+
+.sidebar-card:last-child {
+    margin-bottom: 0;
+}
+
+.sidebar-card h3 {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    color: var(--primary-dark);
+    margin-bottom: 16px;
+}
+
+.values-list {
+    list-style: none;
+    padding: 0;
+}
+
+.values-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    line-height: 1.6;
+    color: #444;
+}
+
+.values-list li:last-child {
+    border-bottom: none;
+}
+
+.highlight-list {
+    list-style: none;
+    padding: 0;
+}
+
+.highlight-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: #444;
+}
+
+.highlight-list li:last-child {
+    border-bottom: none;
+}
+
+.contact-list {
+    list-style: none;
+    padding: 0;
+}
+
+.contact-list li {
+    padding: 8px 0;
+    color: #444;
+}
+
+/* Services Grid */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.service-card {
+    padding: 30px 24px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.service-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
+}
+
+.service-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.service-card h3 {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+}
+
+.service-card p {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.7;
+    margin-bottom: 12px;
+}
+
+.service-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.service-link:hover {
+    color: var(--primary-light);
+    text-decoration: underline;
+}
+
+/* Department Card */
+.department-card {
+    padding: 30px 24px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.department-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
+}
+
+.department-card .department-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.department-card h3 {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+}
+
+.department-card p {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+
+.department-card small {
+    font-size: 13px;
+    color: #888;
+}
+
+.department-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.department-actions .btn-small {
+    padding: 8px 16px;
+    font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .services-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .content-card {
+        padding: 24px;
+    }
+    
+    .sidebar-card {
+        padding: 20px;
+    }
+  }
