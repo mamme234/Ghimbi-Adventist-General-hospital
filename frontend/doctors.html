@@ -4,67 +4,192 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Our Doctors - Gimbie Hospital</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+    <meta name="description" content="Meet our team of highly qualified and experienced doctors at Gimbie Adventist General Hospital." />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="doctors.css" />
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
 </head>
 <body>
-    <!-- Loader -->
+
+    <!-- ============ LOADER ============ -->
     <div id="loader">
         <div class="loader-content">
-            <div class="loader-logo">🏥</div>
-            <div class="loader-text">Loading...</div>
+            <div class="loader-logo">👨‍⚕️</div>
+            <div class="loader-text">Loading Our Doctors...</div>
             <div class="loader-spinner"></div>
         </div>
     </div>
 
-    <!-- Header -->
+    <!-- ============ HEADER ============ -->
     <div id="header"></div>
 
-    <!-- Doctors Section -->
-    <section class="doctors-section">
+    <!-- ============ DOCTORS SECTION ============ -->
+    <section class="doctors-hero">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Our Team</span>
-                <h2 class="section-title">Meet Our Doctors</h2>
-                <p class="section-description">
-                    Our team of highly qualified and experienced medical professionals
+            <div class="doctors-hero-content">
+                <span class="section-tag">👨‍⚕️ Our Team</span>
+                <h1 class="doctors-hero-title">Meet Our <span class="highlight">Medical Experts</span></h1>
+                <p class="doctors-hero-description">
+                    Our team of highly qualified and experienced medical professionals 
                     is dedicated to providing the best care for you and your family.
                 </p>
-            </div>
-
-            <!-- Filters -->
-            <div class="doctors-filters">
-                <div class="filter-group">
-                    <label for="filterDepartment">Department</label>
-                    <select id="filterDepartment">
-                        <option value="">All Departments</option>
-                        <!-- Will be loaded dynamically -->
-                    </select>
+                <div class="doctors-hero-stats">
+                    <div class="hero-stat">
+                        <span class="hero-stat-number">85+</span>
+                        <span class="hero-stat-label">Doctors</span>
+                    </div>
+                    <div class="hero-stat-divider"></div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-number">25+</span>
+                        <span class="hero-stat-label">Specialties</span>
+                    </div>
+                    <div class="hero-stat-divider"></div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-number">15+</span>
+                        <span class="hero-stat-label">Years Avg Experience</span>
+                    </div>
                 </div>
-                <div class="filter-group">
-                    <label for="filterSpecialization">Specialization</label>
-                    <select id="filterSpecialization">
-                        <option value="">All Specializations</option>
-                        <!-- Will be loaded dynamically -->
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="filterSearch">Search</label>
-                    <input type="text" id="filterSearch" placeholder="Search doctors..." />
-                </div>
-            </div>
-
-            <!-- Doctors Grid -->
-            <div class="doctors-grid" id="doctorsGrid">
-                <!-- Will be loaded dynamically -->
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- ============ DOCTORS FILTERS ============ -->
+    <section class="doctors-filters-section">
+        <div class="container">
+            <div class="doctors-filters glass">
+                <div class="filter-group">
+                    <label for="filterDepartment">🏛️ Department</label>
+                    <select id="filterDepartment">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterSpecialization">🩺 Specialization</label>
+                    <select id="filterSpecialization">
+                        <option value="">All Specializations</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterGender">👤 Gender</label>
+                    <select id="filterGender">
+                        <option value="">All</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterLanguage">🗣️ Language</label>
+                    <select id="filterLanguage">
+                        <option value="">All Languages</option>
+                        <option value="English">English</option>
+                        <option value="Amharic">Amharic</option>
+                        <option value="Afaan Oromo">Afaan Oromo</option>
+                        <option value="Arabic">Arabic</option>
+                        <option value="French">French</option>
+                    </select>
+                </div>
+                <div class="filter-group search-group">
+                    <label for="filterSearch">🔍 Search</label>
+                    <input type="text" id="filterSearch" placeholder="Search doctors..." />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ DOCTORS GRID ============ -->
+    <section class="doctors-grid-section">
+        <div class="container">
+            <div class="doctors-grid" id="doctorsGrid">
+                <!-- Will be loaded dynamically -->
+            </div>
+            
+            <!-- Load More -->
+            <div class="doctors-load-more" id="loadMoreContainer">
+                <button class="btn btn-outline" id="loadMoreBtn">
+                    <span class="btn-icon">🔄</span> Load More Doctors
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ WHY CHOOSE OUR DOCTORS ============ -->
+    <section class="why-doctors-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Why Choose Our Doctors</span>
+                <h2 class="section-title">Excellence in <span class="highlight">Medical Care</span></h2>
+                <p class="section-description">
+                    Our doctors are committed to providing the highest quality care with compassion and expertise.
+                </p>
+            </div>
+
+            <div class="why-doctors-grid">
+                <div class="why-doctor-card glass">
+                    <span class="why-doctor-icon">🎓</span>
+                    <h3>Highly Qualified</h3>
+                    <p>All our doctors are board-certified with advanced training in their specialties.</p>
+                </div>
+                <div class="why-doctor-card glass">
+                    <span class="why-doctor-icon">💡</span>
+                    <h3>Experienced</h3>
+                    <p>Years of clinical experience ensuring the best possible outcomes for patients.</p>
+                </div>
+                <div class="why-doctor-card glass">
+                    <span class="why-doctor-icon">❤️</span>
+                    <h3>Compassionate Care</h3>
+                    <p>Treating every patient with dignity, respect, and genuine compassion.</p>
+                </div>
+                <div class="why-doctor-card glass">
+                    <span class="why-doctor-icon">🔬</span>
+                    <h3>Evidence-Based Practice</h3>
+                    <p>Using the latest medical research and best practices in patient care.</p>
+                </div>
+                <div class="why-doctor-card glass">
+                    <span class="why-doctor-icon">🌍</span>
+                    <h3>Multilingual</h3>
+                    <p>Our doctors speak multiple languages to better serve our diverse community.</p>
+                </div>
+                <div class="why-doctor-card glass">
+                    <span class="why-doctor-icon">🤝</span>
+                    <h3>Patient-Centered</h3>
+                    <p>Focusing on individual patient needs and preferences for personalized care.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ APPOINTMENT CTA ============ -->
+    <section class="appointment-cta">
+        <div class="container">
+            <div class="cta-content glass-premium">
+                <div class="cta-text">
+                    <span class="cta-icon">📅</span>
+                    <h2>Ready to Book an Appointment?</h2>
+                    <p>Schedule a consultation with one of our expert doctors today.</p>
+                </div>
+                <div class="cta-actions">
+                    <a href="appointments.html" class="btn btn-primary btn-large">
+                        <span class="btn-icon">📅</span> Book Now
+                    </a>
+                    <a href="contact.html" class="btn btn-outline btn-large">
+                        <span class="btn-icon">📞</span> Contact Us
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
     <div id="footer"></div>
 
+    <!-- ============ SCRIPTS ============ -->
     <script src="components/header.html.js"></script>
     <script src="components/footer.html.js"></script>
     <script src="api.js"></script>
@@ -72,4 +197,4 @@
     <script src="doctors.js"></script>
     <script src="main.js"></script>
 </body>
-      </html>
+    </html>
