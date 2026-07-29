@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Doctor Profile - Gimbie Hospital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="doctors.css" />
+    <link rel="stylesheet" href="doctor-profile.css" />
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+</head>
+<body>
+
+    <!-- ============ LOADER ============ -->
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">👨‍⚕️</div>
+            <div class="loader-text">Loading Doctor Profile...</div>
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
+
+    <!-- ============ HEADER ============ -->
+    <div id="header"></div>
+
+    <!-- ============ DOCTOR PROFILE ============ -->
+    <section class="doctor-profile-section">
+        <div class="container">
+            <div class="doctor-profile-wrapper" id="doctorProfile">
+                <!-- Will be loaded dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <div id="footer"></div>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="components/header.html.js"></script>
+    <script src="components/footer.html.js"></script>
+    <script src="api.js"></script>
+    <script src="auth.js"></script>
+    <script src="doctor-profile.js"></script>
+    <script src="main.js"></script>
+</body>
+  </html>
