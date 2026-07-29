@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emergency - Gimbie Hospital</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="pages.css" />
+    <link rel="stylesheet" href="emergency.css" />
+</head>
+<body>
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">🚑</div>
+            <div class="loader-text">Loading Emergency Services...</div>
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
+
+    <div id="header"></div>
+
+    <section class="emergency-section">
+        <div class="container">
+            <div class="emergency-hero">
+                <div class="emergency-hero-content">
+                    <span class="emergency-badge">🚨 24/7 Emergency Services</span>
+                    <h1>Emergency & Trauma Care</h1>
+                    <p>Immediate medical attention when you need it most. Our emergency team is available 24 hours a day, 7 days a week.</p>
+                    <div class="emergency-contacts">
+                        <div class="emergency-contact glass">
+                            <span class="contact-icon">📞</span>
+                            <div>
+                                <strong>Emergency Hotline</strong>
+                                <span class="emergency-number">+251-XXX-XXXXXX</span>
+                            </div>
+                        </div>
+                        <div class="emergency-contact glass">
+                            <span class="contact-icon">🚑</span>
+                            <div>
+                                <strong>Ambulance</strong>
+                                <span class="emergency-number">911</span>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="#" class="btn btn-emergency btn-large" onclick="callEmergency()">
+                        <span class="btn-icon">📞</span> Call Emergency Now
+                    </a>
+                </div>
+            </div>
+
+            <div class="emergency-grid">
+                <div class="emergency-card glass">
+                    <div class="emergency-card-icon">⚡</div>
+                    <h3>Immediate Response</h3>
+                    <p>Our emergency team responds immediately to all emergency calls and cases.</p>
+                </div>
+                <div class="emergency-card glass">
+                    <div class="emergency-card-icon">🏥</div>
+                    <h3>Advanced Equipment</h3>
+                    <p>State-of-the-art emergency equipment and trauma facilities.</p>
+                </div>
+                <div class="emergency-card glass">
+                    <div class="emergency-card-icon">👨‍⚕️</div>
+                    <h3>Expert Team</h3>
+                    <p>Specialized emergency physicians and trauma specialists on duty 24/7.</p>
+                </div>
+                <div class="emergency-card glass">
+                    <div class="emergency-card-icon">🚑</div>
+                    <h3>Ambulance Service</h3>
+                    <p>Professional ambulance service with emergency medical technicians.</p>
+                </div>
+            </div>
+
+            <div class="emergency-instructions glass">
+                <h2>📋 What to Do in an Emergency</h2>
+                <div class="instructions-grid">
+                    <div class="instruction-step">
+                        <span class="step-number">1</span>
+                        <div>
+                            <h4>Stay Calm</h4>
+                            <p>Take a deep breath and assess the situation calmly.</p>
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <span class="step-number">2</span>
+                        <div>
+                            <h4>Call Emergency</h4>
+                            <p>Dial our emergency hotline or 911 immediately.</p>
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <span class="step-number">3</span>
+                        <div>
+                            <h4>Provide Information</h4>
+                            <p>Give your location, the nature of the emergency, and any relevant details.</p>
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <span class="step-number">4</span>
+                        <div>
+                            <h4>Follow Instructions</h4>
+                            <p>Follow the dispatcher's instructions while help is on the way.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="emergency-location glass">
+                <h2>📍 Our Location</h2>
+                <div class="location-info">
+                    <p><strong>Gimbie Adventist General Hospital</strong></p>
+                    <p>Gimbie, Ethiopia</p>
+                    <p>📞 +251-XXX-XXXXXX</p>
+                    <div class="location-map">
+                        <div style="background: #e8edf4; padding: 40px; text-align: center; border-radius: var(--radius-sm);">
+                            <span style="font-size: 48px;">🗺️</span>
+                            <p style="margin-top: 8px;">Interactive map will be displayed here</p>
+                            <p style="font-size: 13px; color: #888;">View on Google Maps</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="footer"></div>
+
+    <script src="components/header.html.js"></script>
+    <script src="components/footer.html.js"></script>
+    <script src="api.js"></script>
+    <script src="emergency.js"></script>
+    <script src="main.js"></script>
+</body>
+                  </html>
