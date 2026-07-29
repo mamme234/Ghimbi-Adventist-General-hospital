@@ -36,22 +36,178 @@ document.addEventListener('DOMContentLoaded', function() {
     initMobileMenu();
     initScrollProgress();
     initThemeToggle();
-    initGetStarted();
-    updateGetStartedAuth();
+    initAuthTabs();
+    initLoginForm();
+    initSignupForm();
 
     // Load dynamic content
     if (document.getElementById('departmentsGrid')) {
         loadDepartments();
     }
-    if (document.getElementById('newsGrid')) {
-        loadNews();
-    }
-    if (document.querySelector('.stat-number[data-target]')) {
-        loadStatistics();
+    if (document.getElementById('doctorsGrid')) {
+        loadDoctors();
     }
 
     updateAuthLinks();
 });
+
+// ============ Auth Tabs ============
+function initAuthTabs() {
+    const tabs = document.querySelectorAll('.auth-tab');
+    const forms = {
+        login: document.getElementById('loginForm'),
+        signup: document.getElementById('signupForm')
+    };
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            tabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+
+            const tabName = this.dataset.tab;
+            Object.keys(forms).forEach(key => {
+                forms[key].classList.remove('active');
+            });
+            forms[tabName].classList.add('active');
+        });
+    });
+}
+
+// ============ Login Form ============
+function initLoginForm() {
+    const form = document.getElementById('loginForm');
+    if (!form) return;
+
+    const loginBtn = document.getElementById('loginBtn');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const identifier = document.getElementById('loginIdentifier').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const rememberMe = document.getElementById('rememberMe').checked;
+
+        if (!identifier || !password) {
+            showToast('Please enter your login credentials.', 'warning');
+            return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<span class="btn-icon">⏳</span> Signing In...';
+
+        try {
+            // Try login with email
+            const response = await api.login(identifier, password);
+
+            if (response && response.token) {
+                showToast('Welcome back! Redirecting to your dashboard...', 'success');
+                setTimeout(() => {
+                    const user = getCurrentUser();
+                    const roleMap = {
+                        'patient': 'patient-dashboard.html',
+                        'doctor': 'doctor-dashboard.html',
+                        'admin': 'admin-dashboard.html',
+                        'nurse': 'nurse-dashboard.html',
+                        'reception': 'reception-dashboard.html',
+                        'laboratory': 'laboratory-dashboard.html',
+                        'pharmacy': 'pharmacy-dashboard.html',
+                        'finance': 'finance-dashboard.html'
+                    };
+                    window.location.href = roleMap[user?.role] || 'patient-dashboard.html';
+                }, 1500);
+            }
+        } catch (error) {
+            showToast(error.message || 'Login failed. Please check your credentials.', 'error');
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<span class="btn-icon">🔑</span> Sign In';
+        }
+    });
+}
+
+// ============ Signup Form ============
+function initSignupForm() {
+    const form = document.getElementById('signupForm');
+    if (!form) return;
+
+    const signupBtn = document.getElementById('signupBtn');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const firstName = document.getElementById('regFirstName').value.trim();
+        const lastName = document.getElementById('regLastName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const dob = document.getElementById('regDob').value;
+        const gender = document.getElementById('regGender').value;
+        const password = document.getElementById('regPassword').value;
+        const confirmPassword = document.getElementById('regConfirmPassword').value;
+        const terms = document.getElementById('regTerms').checked;
+
+        // Validation
+        if (!firstName || !lastName || !email || !phone || !dob || !gender || !password) {
+            showToast('Please fill in all required fields.', 'warning');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            showToast('Passwords do not match.', 'error');
+            return;
+        }
+
+        if (password.length < 8) {
+            showToast('Password must be at least 8 characters.', 'error');
+            return;
+        }
+
+        if (!terms) {
+            showToast('Please agree to the Terms of Service.', 'warning');
+            return;
+        }
+
+        signupBtn.disabled = true;
+        signupBtn.innerHTML = '<span class="btn-icon">⏳</span> Creating Account...';
+
+        try {
+            const userData = {
+                firstName,
+                lastName,
+                email,
+                phone,
+                password,
+                dateOfBirth: dob,
+                gender,
+                role: 'patient'
+            };
+
+            const response = await api.register(userData);
+
+            if (response && response.token) {
+                showToast('Account created successfully! Welcome to Gimbie Hospital.', 'success');
+                setTimeout(() => {
+                    window.location.href = '/patient-dashboard.html';
+                }, 2000);
+            }
+        } catch (error) {
+            showToast(error.message || 'Registration failed. Please try again.', 'error');
+            signupBtn.disabled = false;
+            signupBtn.innerHTML = '<span class="btn-icon">📝</span> Create Account';
+        }
+    });
+}
+
+// ============ Toggle Password ============
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        if (input.type === 'password') {
+            input.type = 'text';
+        } else {
+            input.type = 'password';
+        }
+    }
+}
+window.togglePassword = togglePassword;
 
 // ============ Update Auth Links ============
 function updateAuthLinks() {
@@ -72,66 +228,71 @@ function updateAuthLinks() {
             'pharmacy': 'pharmacy-dashboard.html',
             'finance': 'finance-dashboard.html'
         };
-        const dashboardUrl = roleMap[user.role] || 'patient-dashboard.html';
-        
         navAuth.innerHTML = `
-            <a href="${dashboardUrl}" class="nav-link nav-dashboard">
-                <span class="nav-icon">📊</span> Dashboard
-            </a>
-            <a href="#" onclick="api.logout(); return false;" class="nav-link nav-logout">
-                <span class="nav-icon">🚪</span> Logout
-            </a>
+            <a href="${roleMap[user.role] || 'patient-dashboard.html'}" class="nav-dashboard">📊 Dashboard</a>
+            <a href="#" onclick="api.logout(); return false;" class="nav-logout">🚪 Logout</a>
         `;
     } else {
         navAuth.innerHTML = `
-            <a href="patient-login.html" class="nav-login">Login</a>
-            <a href="patient-signup.html" class="nav-register">Register</a>
+            <a href="#loginForm" class="nav-login">Login</a>
+            <a href="#signupForm" class="nav-register">Register</a>
         `;
     }
 }
 
-// ============ Update Get Started Auth ============
-function updateGetStartedAuth() {
-    const isLoggedIn = isAuthenticated();
-    const loginBtn = document.querySelector('.get-started-btn.login-btn');
-    const registerBtn = document.querySelector('.get-started-btn.register-btn');
-    const dashboardBtn = document.getElementById('dashboardQuickLink');
+// ============ Load Departments ============
+async function loadDepartments() {
+    try {
+        const departments = await api.getDepartments();
+        const grid = document.getElementById('departmentsGrid');
+        if (!grid) return;
+        grid.innerHTML = departments.slice(0, 6).map(dept => `
+            <div class="department-card glass" onclick="window.location.href='departments.html?dept=${encodeURIComponent(dept.name)}'">
+                <span class="department-icon">${getDepartmentIcon(dept.name)}</span>
+                <h3>${dept.name}</h3>
+                <p>${dept.description || 'Comprehensive medical services'}</p>
+                ${dept.head ? `<small>Head: Dr. ${dept.head.firstName} ${dept.head.lastName}</small>` : ''}
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading departments:', error);
+    }
+}
 
-    if (isLoggedIn) {
-        if (loginBtn) loginBtn.style.display = 'none';
-        if (registerBtn) registerBtn.style.display = 'none';
-        if (dashboardBtn) {
-            dashboardBtn.style.display = 'flex';
-            const user = getCurrentUser();
-            const roleMap = {
-                'patient': 'patient-dashboard.html',
-                'doctor': 'doctor-dashboard.html',
-                'admin': 'admin-dashboard.html',
-                'nurse': 'nurse-dashboard.html',
-                'reception': 'reception-dashboard.html',
-                'laboratory': 'laboratory-dashboard.html',
-                'pharmacy': 'pharmacy-dashboard.html',
-                'finance': 'finance-dashboard.html'
-            };
-            dashboardBtn.href = roleMap[user?.role] || 'patient-dashboard.html';
-            const name = user?.firstName || 'Patient';
-            const strongEl = dashboardBtn.querySelector('strong');
-            if (strongEl) strongEl.textContent = `Welcome, ${name}`;
+function getDepartmentIcon(name) {
+    const icons = {
+        'Emergency': '🚑', 'Surgery': '🔪', 'Pediatrics': '👶', 'Maternity': '🤱',
+        'Internal Medicine': '🫀', 'Dental': '🦷', 'Eye Clinic': '👁️', 'Pharmacy': '💊',
+        'Laboratory': '🔬', 'Radiology': '📷', 'Cardiology': '❤️', 'Orthopedics': '🦴'
+    };
+    return icons[name] || '🏥';
+}
+
+// ============ Load Doctors ============
+async function loadDoctors() {
+    try {
+        const doctors = await api.getDoctors('?limit=6');
+        const grid = document.getElementById('doctorsGrid');
+        if (!grid) return;
+        if (!doctors || doctors.length === 0) {
+            grid.innerHTML = `<div class="no-results">No doctors available</div>`;
+            return;
         }
-    } else {
-        if (loginBtn) loginBtn.style.display = 'flex';
-        if (registerBtn) registerBtn.style.display = 'flex';
-        if (dashboardBtn) dashboardBtn.style.display = 'none';
+        grid.innerHTML = doctors.map(doctor => {
+            const user = doctor.user || {};
+            const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase();
+            return `
+                <div class="doctor-card glass">
+                    <div class="doctor-avatar">${initials || '👨‍⚕️'}</div>
+                    <h4>Dr. ${user.firstName || ''} ${user.lastName || ''}</h4>
+                    <p>${doctor.specialization || 'General'}</p>
+                    <small>${doctor.experience || 0} years experience</small>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading doctors:', error);
     }
-}
-
-// ============ Init Get Started ============
-function initGetStarted() {
-    document.querySelectorAll('.get-started-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            console.log('Get Started clicked:', this.querySelector('strong')?.textContent);
-        });
-    });
 }
 
 // ============ Stats Counter ============
@@ -166,7 +327,7 @@ function animateNumber(element, target, duration = 2000) {
 
 // ============ Scroll Animations ============
 function initScrollAnimations() {
-    const elements = document.querySelectorAll('.glass, .stat-card, .department-card, .testimonial-card, .news-card');
+    const elements = document.querySelectorAll('.glass, .stat-card, .department-card, .testimonial-card');
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -324,18 +485,16 @@ function initAIAssistant() {
     function getAIResponse(message) {
         const lower = message.toLowerCase();
         if (lower.includes('department')) {
-            return `We have Emergency, Surgery, Pediatrics, Maternity, Internal Medicine, Dental, Eye Clinic, Pharmacy, Laboratory, Radiology, Cardiology, and Orthopedics.<br><a href="departments.html">View all departments →</a>`;
+            return `We have Emergency, Surgery, Pediatrics, Maternity, Internal Medicine, Dental, Eye Clinic, Pharmacy, Laboratory, Radiology, Cardiology, and Orthopedics.`;
         }
         if (lower.includes('appointment') || lower.includes('book')) {
-            return `To book an appointment:<br>1. Visit <a href="appointments.html">Appointments page</a><br>2. Choose department and doctor<br>3. Select date and time<br>4. Confirm booking`;
+            return `To book an appointment, click the "Book Appointment" button above or scroll to the Appointment section.`;
         }
         if (lower.includes('doctor')) {
-            return `View all our doctors on the <a href="doctors.html">Doctors page</a>`;
+            return `View our featured doctors below in the "Featured Doctors" section.`;
         }
-        if (lower.includes('login') || lower.includes('sign up') || lower.includes('register')) {
-            return `🔑 <strong>Patient Portal</strong><br><br>
-                <a href="patient-login.html" class="btn btn-primary btn-small">Login</a>
-                <a href="patient-signup.html" class="btn btn-outline btn-small">Sign Up</a>`;
+        if (lower.includes('login') || lower.includes('sign')) {
+            return `You can login or create an account in the "Get Started" section above.`;
         }
         return `I'm here to help! You can ask me about:<br>
             • Departments<br>
@@ -343,85 +502,6 @@ function initAIAssistant() {
             • Doctors<br>
             • Login/Sign up<br>
             • Emergency services`;
-    }
-}
-
-// ============ Load Departments ============
-async function loadDepartments() {
-    try {
-        const departments = await api.getDepartments();
-        const grid = document.getElementById('departmentsGrid');
-        if (!grid) return;
-        grid.innerHTML = departments.slice(0, 6).map(dept => `
-            <div class="department-card glass" onclick="window.location.href='departments.html?dept=${encodeURIComponent(dept.name)}'">
-                <span class="department-icon">${getDepartmentIcon(dept.name)}</span>
-                <h3>${dept.name}</h3>
-                <p>${dept.description || 'Comprehensive medical services'}</p>
-                ${dept.head ? `<small>Head: Dr. ${dept.head.firstName} ${dept.head.lastName}</small>` : ''}
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Error loading departments:', error);
-    }
-}
-
-function getDepartmentIcon(name) {
-    const icons = {
-        'Emergency': '🚑', 'Surgery': '🔪', 'Pediatrics': '👶', 'Maternity': '🤱',
-        'Internal Medicine': '🫀', 'Dental': '🦷', 'Eye Clinic': '👁️', 'Pharmacy': '💊',
-        'Laboratory': '🔬', 'Radiology': '📷', 'Cardiology': '❤️', 'Orthopedics': '🦴'
-    };
-    return icons[name] || '🏥';
-}
-
-// ============ Load News ============
-async function loadNews() {
-    try {
-        const response = await api.getNews('?limit=3');
-        const grid = document.getElementById('newsGrid');
-        if (!grid) return;
-        if (response.news && response.news.length > 0) {
-            grid.innerHTML = response.news.map(news => `
-                <div class="news-card glass">
-                    <div class="news-image" style="background: linear-gradient(135deg, #${Math.floor(Math.random()*16777215).toString(16)}, #${Math.floor(Math.random()*16777215).toString(16)})"></div>
-                    <div class="news-content">
-                        <span class="news-tag">${news.category || 'Hospital'}</span>
-                        <h3 class="news-title">${news.title}</h3>
-                        <p class="news-excerpt">${news.excerpt || news.content.substring(0, 150) + '...'}</p>
-                        <small>${new Date(news.publishedDate).toLocaleDateString()}</small>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            grid.innerHTML = `<div class="news-card glass"><div class="news-content"><h3>No news available</h3><p>Check back later for updates.</p></div></div>`;
-        }
-    } catch (error) {
-        console.error('Error loading news:', error);
-    }
-}
-
-// ============ Load Statistics ============
-async function loadStatistics() {
-    try {
-        const stats = await api.getStatistics();
-        const statElements = document.querySelectorAll('.stat-number[data-target]');
-        statElements.forEach(el => {
-            const parent = el.closest('.stat-item');
-            const label = parent?.querySelector('.stat-label')?.textContent?.toLowerCase();
-            if (label) {
-                const keyMap = {
-                    'doctors': 'doctors', 'nurses': 'nurses', 'staff': 'staff',
-                    'departments': 'departments', 'beds': 'beds', 'patients served': 'patients',
-                    'surgeries': 'surgeries', 'ambulances': 'ambulances',
-                    'lab tests': 'labTests', 'years of service': 'yearsOfService'
-                };
-                const key = keyMap[label] || label.replace(/\s/g, '');
-                const value = stats[key] || 0;
-                animateNumber(el, value);
-            }
-        });
-    } catch (error) {
-        console.error('Error loading statistics:', error);
     }
 }
 
