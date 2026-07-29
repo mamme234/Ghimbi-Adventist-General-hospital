@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- ========== META ========== -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Gimbie Adventist General Hospital - World-class healthcare services in Gimbie, Ethiopia. Quality medical care with compassion and excellence since 1960." />
@@ -9,37 +8,35 @@
     <meta name="author" content="Gimbie Adventist General Hospital" />
     <meta name="theme-color" content="#0a1628" />
     
-    <!-- ========== OPEN GRAPH ========== -->
+    <!-- Open Graph -->
     <meta property="og:title" content="Gimbie Adventist General Hospital" />
     <meta property="og:description" content="World-class healthcare services in Gimbie, Ethiopia. Quality medical care with compassion and excellence since 1960." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://gimbiehospital.org" />
     <meta property="og:image" content="assets/og-image.jpg" />
     
-    <!-- ========== TWITTER CARD ========== -->
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Gimbie Adventist General Hospital" />
     <meta name="twitter:description" content="World-class healthcare services in Gimbie, Ethiopia." />
     <meta name="twitter:image" content="assets/og-image.jpg" />
     
-    <!-- ========== FAVICON ========== -->
+    <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
     <link rel="manifest" href="manifest.json" />
     
-    <!-- ========== FONTS ========== -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     
-    <!-- ========== STYLES ========== -->
+    <!-- Styles -->
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-    <!-- ============================================================ -->
-    <!-- LOADING SCREEN -->
-    <!-- ============================================================ -->
+    <!-- ============ LOADER ============ -->
     <div id="loader">
         <div class="loader-content">
             <div class="loader-logo">🏥</div>
@@ -49,16 +46,10 @@
         </div>
     </div>
 
-
-    <!-- ============================================================ -->
-    <!-- SCROLL PROGRESS BAR -->
-    <!-- ============================================================ -->
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
     <div class="scroll-progress" id="scrollProgress"></div>
 
-
-    <!-- ============================================================ -->
-    <!-- TOP BAR -->
-    <!-- ============================================================ -->
+    <!-- ============ TOP BAR ============ -->
     <div class="top-bar" id="topBar">
         <div class="container">
             <div class="top-bar-inner">
@@ -87,10 +78,7 @@
         </div>
     </div>
 
-
-    <!-- ============================================================ -->
-    <!-- NAVIGATION BAR -->
-    <!-- ============================================================ -->
+    <!-- ============ NAVIGATION BAR ============ -->
     <header class="header" id="header">
         <div class="container">
             <div class="header-inner">
@@ -124,9 +112,8 @@
                         <button class="nav-theme" id="themeToggle" aria-label="Toggle theme">
                             <span class="nav-icon" id="themeIcon">🌙</span>
                         </button>
-                        <div class="nav-auth">
-                            <a href="patient-login.html" class="nav-login">Login</a>
-                            <a href="patient-login.html?register=true" class="nav-register">Register</a>
+                        <div class="nav-auth" id="navAuth">
+                            <!-- Will be dynamically updated by main.js -->
                         </div>
                         <a href="appointments.html" class="btn btn-primary btn-small btn-book">Book Appointment</a>
                     </div>
@@ -142,10 +129,7 @@
         </div>
     </header>
 
-
-    <!-- ============================================================ -->
-    <!-- HERO SECTION -->
-    <!-- ============================================================ -->
+    <!-- ============ HERO SECTION ============ -->
     <section class="hero" id="home">
         <div class="hero-background">
             <div class="hero-particles"></div>
@@ -192,6 +176,58 @@
                     </button>
                 </div>
 
+                <!-- Get Started Section -->
+                <div class="hero-get-started" id="heroGetStarted">
+                    <div class="get-started-badge">
+                        <span class="badge-icon">🚀</span>
+                        <span>Get Started</span>
+                    </div>
+                    <div class="get-started-options">
+                        <a href="patient-login.html" class="get-started-btn login-btn">
+                            <span class="btn-icon">🔑</span>
+                            <div>
+                                <strong>Login</strong>
+                                <span>Access your health records</span>
+                            </div>
+                        </a>
+                        <a href="patient-login.html?register=true" class="get-started-btn register-btn">
+                            <span class="btn-icon">📝</span>
+                            <div>
+                                <strong>Sign Up</strong>
+                                <span>Create your patient account</span>
+                            </div>
+                        </a>
+                        <a href="patient-dashboard.html" class="get-started-btn dashboard-btn" id="dashboardQuickLink" style="display:none;">
+                            <span class="btn-icon">📊</span>
+                            <div>
+                                <strong>Dashboard</strong>
+                                <span>Go to your dashboard</span>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="get-started-features">
+                        <div class="feature-item">
+                            <span>📅</span>
+                            <span>Book Appointments</span>
+                        </div>
+                        <div class="feature-divider"></div>
+                        <div class="feature-item">
+                            <span>📋</span>
+                            <span>View Records</span>
+                        </div>
+                        <div class="feature-divider"></div>
+                        <div class="feature-item">
+                            <span>💊</span>
+                            <span>Manage Prescriptions</span>
+                        </div>
+                        <div class="feature-divider"></div>
+                        <div class="feature-item">
+                            <span>🔬</span>
+                            <span>Lab Results</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="hero-stats">
                     <div class="stat-item">
                         <span class="stat-number" data-target="85">0</span>
@@ -227,10 +263,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- QUICK SERVICES -->
-    <!-- ============================================================ -->
+    <!-- ============ QUICK SERVICES ============ -->
     <section class="quick-services section">
         <div class="container">
             <div class="quick-services-grid">
@@ -270,10 +303,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- LIVE STATISTICS -->
-    <!-- ============================================================ -->
+    <!-- ============ LIVE STATISTICS ============ -->
     <section class="stats-section section section-dark">
         <div class="container">
             <div class="section-header">
@@ -339,10 +369,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- ABOUT HOSPITAL -->
-    <!-- ============================================================ -->
+    <!-- ============ ABOUT HOSPITAL ============ -->
     <section class="about-section section section-light" id="about">
         <div class="container">
             <div class="about-wrapper">
@@ -383,10 +410,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- WHY CHOOSE US -->
-    <!-- ============================================================ -->
+    <!-- ============ WHY CHOOSE US ============ -->
     <section class="why-choose-section section section-dark">
         <div class="container">
             <div class="section-header">
@@ -432,10 +456,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- DEPARTMENTS -->
-    <!-- ============================================================ -->
+    <!-- ============ DEPARTMENTS ============ -->
     <section class="departments-section section section-light">
         <div class="container">
             <div class="section-header">
@@ -452,10 +473,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- FEATURED DOCTORS -->
-    <!-- ============================================================ -->
+    <!-- ============ FEATURED DOCTORS ============ -->
     <section class="doctors-section section section-dark">
         <div class="container">
             <div class="section-header">
@@ -472,10 +490,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- MEDICAL SERVICES -->
-    <!-- ============================================================ -->
+    <!-- ============ MEDICAL SERVICES ============ -->
     <section class="medical-services-section section section-light">
         <div class="container">
             <div class="section-header">
@@ -536,10 +551,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- HOSPITAL GALLERY -->
-    <!-- ============================================================ -->
+    <!-- ============ HOSPITAL GALLERY ============ -->
     <section class="gallery-section section section-dark">
         <div class="container">
             <div class="section-header">
@@ -591,10 +603,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- PATIENT TESTIMONIALS -->
-    <!-- ============================================================ -->
+    <!-- ============ PATIENT TESTIMONIALS ============ -->
     <section class="testimonials-section section section-light">
         <div class="container">
             <div class="section-header">
@@ -606,15 +615,50 @@
             </div>
 
             <div class="testimonials-grid" id="testimonialsGrid">
-                <!-- Dynamically loaded or static -->
+                <div class="testimonial-card glass">
+                    <div class="testimonial-rating">★★★★★</div>
+                    <p class="testimonial-text">
+                        "The care I received at Gimbie Adventist Hospital was exceptional. The doctors and nurses were professional, compassionate, and attentive to my needs."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">MK</div>
+                        <div class="author-info">
+                            <span class="author-name">Mulugeta Kebede</span>
+                            <span class="author-role">Patient</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card glass">
+                    <div class="testimonial-rating">★★★★★</div>
+                    <p class="testimonial-text">
+                        "The maternity ward is amazing. The staff made me feel safe and comfortable throughout my delivery. Thank you for the wonderful care."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">AT</div>
+                        <div class="author-info">
+                            <span class="author-name">Alem Tsegaye</span>
+                            <span class="author-role">New Mother</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card glass">
+                    <div class="testimonial-rating">★★★★★</div>
+                    <p class="testimonial-text">
+                        "The surgical team was excellent. They explained everything clearly and the recovery was smooth. I highly recommend this hospital."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">BW</div>
+                        <div class="author-info">
+                            <span class="author-name">Berhanu Wondimu</span>
+                            <span class="author-role">Patient</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- LATEST NEWS -->
-    <!-- ============================================================ -->
+    <!-- ============ LATEST NEWS ============ -->
     <section class="news-section section section-dark">
         <div class="container">
             <div class="section-header">
@@ -631,10 +675,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- HEALTH TIPS -->
-    <!-- ============================================================ -->
+    <!-- ============ HEALTH TIPS ============ -->
     <section class="health-tips-section section section-light">
         <div class="container">
             <div class="section-header">
@@ -680,10 +721,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- APPOINTMENT BANNER -->
-    <!-- ============================================================ -->
+    <!-- ============ APPOINTMENT BANNER ============ -->
     <section class="appointment-banner section">
         <div class="container">
             <div class="banner-content glass-premium">
@@ -694,17 +732,14 @@
                 </div>
                 <div class="banner-actions">
                     <a href="appointments.html" class="btn btn-primary btn-large">Book Now</a>
-                    <a href="patient-login.html" class="btn btn-outline btn-large">Online Registration</a>
+                    <a href="patient-login.html?register=true" class="btn btn-outline btn-large">Online Registration</a>
                     <a href="contact.html" class="btn btn-outline btn-large">Contact Reception</a>
                 </div>
             </div>
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- EMERGENCY BANNER -->
-    <!-- ============================================================ -->
+    <!-- ============ EMERGENCY BANNER ============ -->
     <section class="emergency-banner section" style="background: linear-gradient(135deg, #dc3545, #ff4757); padding: 40px 0;">
         <div class="container">
             <div class="banner-content" style="color: white; text-align: center;">
@@ -722,10 +757,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- PARTNERS -->
-    <!-- ============================================================ -->
+    <!-- ============ PARTNERS ============ -->
     <section class="partners-section section section-light">
         <div class="container">
             <div class="section-header">
@@ -761,10 +793,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- GOOGLE MAP -->
-    <!-- ============================================================ -->
+    <!-- ============ GOOGLE MAP ============ -->
     <section class="map-section section section-dark" id="location">
         <div class="container">
             <div class="section-header">
@@ -810,10 +839,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- CONTACT SECTION -->
-    <!-- ============================================================ -->
+    <!-- ============ CONTACT SECTION ============ -->
     <section class="contact-section section section-light" id="contact">
         <div class="container">
             <div class="section-header">
@@ -886,10 +912,7 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- NEWSLETTER -->
-    <!-- ============================================================ -->
+    <!-- ============ NEWSLETTER ============ -->
     <section class="newsletter-section section section-dark">
         <div class="container">
             <div class="newsletter-wrapper glass-premium">
@@ -906,14 +929,10 @@
         </div>
     </section>
 
-
-    <!-- ============================================================ -->
-    <!-- FOOTER -->
-    <!-- ============================================================ -->
+    <!-- ============ FOOTER ============ -->
     <footer class="footer">
         <div class="container">
             <div class="footer-grid">
-                <!-- Logo & About -->
                 <div class="footer-section">
                     <h3>🏥 Gimbie Adventist Hospital</h3>
                     <p>Providing quality healthcare with compassion and excellence since 1960.</p>
@@ -926,7 +945,6 @@
                     </div>
                 </div>
 
-                <!-- Quick Links -->
                 <div class="footer-section">
                     <h4>Quick Links</h4>
                     <ul>
@@ -939,7 +957,6 @@
                     </ul>
                 </div>
 
-                <!-- Departments -->
                 <div class="footer-section">
                     <h4>Departments</h4>
                     <ul>
@@ -952,7 +969,6 @@
                     </ul>
                 </div>
 
-                <!-- Contact -->
                 <div class="footer-section">
                     <h4>Contact</h4>
                     <ul>
@@ -981,40 +997,24 @@
         </div>
     </footer>
 
-
-    <!-- ============================================================ -->
-    <!-- FLOATING COMPONENTS -->
-    <!-- ============================================================ -->
-
-    <!-- Scroll to Top Button -->
+    <!-- ============ FLOATING COMPONENTS ============ -->
     <button class="scroll-top" id="scrollTopBtn" aria-label="Scroll to top">
         <span>↑</span>
     </button>
-
-    <!-- AI Assistant Button -->
     <button class="floating-ai" id="aiAssistantBtn" aria-label="AI Assistant">
         <span>🤖</span>
     </button>
-
-    <!-- Emergency Floating Button -->
     <a href="emergency.html" class="floating-emergency" aria-label="Emergency">
         <span>🚑</span>
     </a>
-
-    <!-- Accessibility Button -->
     <button class="floating-accessibility" id="accessibilityBtn" aria-label="Accessibility">
         <span>♿</span>
     </button>
-
-    <!-- WhatsApp Chat Button -->
     <a href="https://wa.me/251XXXXXXXXX" target="_blank" class="floating-whatsapp" aria-label="WhatsApp">
         <span>💬</span>
     </a>
 
-
-    <!-- ============================================================ -->
-    <!-- AI ASSISTANT MODAL -->
-    <!-- ============================================================ -->
+    <!-- ============ AI ASSISTANT MODAL ============ -->
     <div id="aiAssistantModal" class="modal">
         <div class="modal-content glass">
             <div class="modal-header">
@@ -1047,13 +1047,10 @@
         </div>
     </div>
 
-
-    <!-- ============================================================ -->
-    <!-- SCRIPTS -->
-    <!-- ============================================================ -->
+    <!-- ============ SCRIPTS ============ -->
     <script src="api.js"></script>
     <script src="auth.js"></script>
     <script src="map.js"></script>
     <script src="main.js"></script>
 </body>
-                </html>
+    </html>
