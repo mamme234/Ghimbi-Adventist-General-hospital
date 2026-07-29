@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gallery - Gimbie Hospital</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="pages.css" />
+    <link rel="stylesheet" href="gallery.css" />
+</head>
+<body>
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">🏥</div>
+            <div class="loader-text">Loading Gallery...</div>
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
+
+    <div id="header"></div>
+
+    <section class="page-section">
+        <div class="container">
+            <div class="page-header">
+                <span class="section-tag">Gallery</span>
+                <h1 class="page-title">Our Gallery</h1>
+                <p class="page-subtitle">A glimpse into life at Gimbie Adventist General Hospital</p>
+            </div>
+
+            <div class="gallery-filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="Hospital">🏥 Hospital</button>
+                <button class="filter-btn" data-filter="Events">🎉 Events</button>
+                <button class="filter-btn" data-filter="Doctors">👨‍⚕️ Doctors</button>
+                <button class="filter-btn" data-filter="Facilities">🏗️ Facilities</button>
+                <button class="filter-btn" data-filter="Patient Care">❤️ Patient Care</button>
+            </div>
+
+            <div class="gallery-grid" id="galleryGrid">
+                <!-- Will be loaded dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <div id="footer"></div>
+
+    <script src="components/header.html.js"></script>
+    <script src="components/footer.html.js"></script>
+    <script src="api.js"></script>
+    <script src="gallery.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
