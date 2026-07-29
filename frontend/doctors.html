@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Our Doctors - Gimbie Hospital</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="doctors.css" />
+</head>
+<body>
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">🏥</div>
+            <div class="loader-text">Loading...</div>
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div id="header"></div>
+
+    <!-- Doctors Section -->
+    <section class="doctors-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Our Team</span>
+                <h2 class="section-title">Meet Our Doctors</h2>
+                <p class="section-description">
+                    Our team of highly qualified and experienced medical professionals
+                    is dedicated to providing the best care for you and your family.
+                </p>
+            </div>
+
+            <!-- Filters -->
+            <div class="doctors-filters">
+                <div class="filter-group">
+                    <label for="filterDepartment">Department</label>
+                    <select id="filterDepartment">
+                        <option value="">All Departments</option>
+                        <!-- Will be loaded dynamically -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterSpecialization">Specialization</label>
+                    <select id="filterSpecialization">
+                        <option value="">All Specializations</option>
+                        <!-- Will be loaded dynamically -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterSearch">Search</label>
+                    <input type="text" id="filterSearch" placeholder="Search doctors..." />
+                </div>
+            </div>
+
+            <!-- Doctors Grid -->
+            <div class="doctors-grid" id="doctorsGrid">
+                <!-- Will be loaded dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <div id="footer"></div>
+
+    <script src="components/header.html.js"></script>
+    <script src="components/footer.html.js"></script>
+    <script src="api.js"></script>
+    <script src="auth.js"></script>
+    <script src="doctors.js"></script>
+    <script src="main.js"></script>
+</body>
+      </html>
