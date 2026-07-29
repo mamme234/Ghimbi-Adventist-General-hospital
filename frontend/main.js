@@ -10,154 +10,107 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000);
 
-    // Load header and footer
-    loadHeader();
-    loadFooter();
-
     // Initialize features
     initStatsCounter();
     initScrollAnimations();
     initAIAssistant();
     initSmoothScroll();
     initMobileMenu();
+    initScrollProgress();
+    initThemeToggle();
+    initGetStarted();
 
-    // Load departments
+    // Load dynamic content
     if (document.getElementById('departmentsGrid')) {
         loadDepartments();
     }
-
-    // Load news
     if (document.getElementById('newsGrid')) {
         loadNews();
     }
-
-    // Load statistics
     if (document.querySelector('.stat-number[data-target]')) {
         loadStatistics();
     }
+
+    // Update auth links
+    updateAuthLinks();
+
+    // Update get started buttons based on auth status
+    updateGetStartedAuth();
 });
 
-// ============ Load Header ============
-function loadHeader() {
-    const headerContainer = document.getElementById('header');
-    if (!headerContainer) return;
+// ============ Update Auth Links ============
+function updateAuthLinks() {
+    const navAuth = document.getElementById('navAuth');
+    if (!navAuth) return;
 
     const isLoggedIn = isAuthenticated();
     const user = getCurrentUser();
 
-    let navLinks = `
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="services.html">Services</a>
-        <a href="departments.html">Departments</a>
-        <a href="doctors.html">Doctors</a>
-        <a href="appointments.html">Appointments</a>
-        <a href="news.html">News</a>
-        <a href="contact.html">Contact</a>
-    `;
-
-    let authLinks = '';
     if (isLoggedIn && user) {
-        if (user.role === 'patient') {
-            authLinks = `
-                <a href="patient-dashboard.html" class="nav-link">Dashboard</a>
-                <a href="#" onclick="api.logout()" class="nav-link">Logout</a>
-            `;
-        } else if (user.role === 'admin') {
-            authLinks = `
-                <a href="admin-dashboard.html" class="nav-link">Admin</a>
-                <a href="#" onclick="api.logout()" class="nav-link">Logout</a>
-            `;
-        } else {
-            authLinks = `
-                <a href="#" onclick="api.logout()" class="nav-link">Logout</a>
-            `;
-        }
+        const roleMap = {
+            'patient': 'patient-dashboard.html',
+            'doctor': 'doctor-dashboard.html',
+            'admin': 'admin-dashboard.html',
+            'nurse': 'nurse-dashboard.html',
+            'reception': 'reception-dashboard.html',
+            'laboratory': 'laboratory-dashboard.html',
+            'pharmacy': 'pharmacy-dashboard.html',
+            'finance': 'finance-dashboard.html'
+        };
+        const dashboardUrl = roleMap[user.role] || 'patient-dashboard.html';
+        
+        navAuth.innerHTML = `
+            <a href="${dashboardUrl}" class="nav-link nav-dashboard">
+                <span class="nav-icon">📊</span> Dashboard
+            </a>
+            <a href="#" onclick="api.logout(); return false;" class="nav-link nav-logout">
+                <span class="nav-icon">🚪</span> Logout
+            </a>
+        `;
     } else {
-        authLinks = `
-            <a href="patient-login.html" class="nav-link">Login</a>
-            <a href="patient-login.html?register=true" class="btn btn-primary btn-small">Register</a>
+        navAuth.innerHTML = `
+            <a href="patient-login.html" class="nav-login">Login</a>
+            <a href="patient-login.html?register=true" class="nav-register">Register</a>
         `;
     }
-
-    headerContainer.innerHTML = `
-        <header class="header">
-            <div class="container">
-                <div class="header-inner">
-                    <div class="header-logo">
-                        <a href="index.html">
-                            <span class="logo-icon">🏥</span>
-                            <span class="logo-text">Gimbie Hospital</span>
-                        </a>
-                    </div>
-                    <nav class="header-nav">
-                        ${navLinks}
-                        ${authLinks}
-                    </nav>
-                    <button class="mobile-menu-toggle" aria-label="Toggle menu">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </button>
-                </div>
-            </div>
-        </header>
-    `;
 }
 
-// ============ Load Footer ============
-function loadFooter() {
-    const footerContainer = document.getElementById('footer');
-    if (!footerContainer) return;
+// ============ Update Get Started Auth ============
+function updateGetStartedAuth() {
+    const isLoggedIn = isAuthenticated();
+    const loginBtn = document.querySelector('.get-started-btn.login-btn');
+    const registerBtn = document.querySelector('.get-started-btn.register-btn');
+    const dashboardBtn = document.getElementById('dashboardQuickLink');
 
-    footerContainer.innerHTML = `
-        <footer class="footer">
-            <div class="container">
-                <div class="footer-grid">
-                    <div class="footer-section">
-                        <h3>🏥 Gimbie Adventist Hospital</h3>
-                        <p>Providing quality healthcare with compassion and excellence since 1960.</p>
-                        <div class="footer-social">
-                            <a href="#" aria-label="Facebook">📘</a>
-                            <a href="#" aria-label="Twitter">🐦</a>
-                            <a href="#" aria-label="Instagram">📸</a>
-                            <a href="#" aria-label="YouTube">▶️</a>
-                        </div>
-                    </div>
-                    <div class="footer-section">
-                        <h4>Quick Links</h4>
-                        <ul>
-                            <li><a href="about.html">About Us</a></li>
-                            <li><a href="services.html">Services</a></li>
-                            <li><a href="doctors.html">Doctors</a></li>
-                            <li><a href="appointments.html">Appointments</a></li>
-                            <li><a href="careers.html">Careers</a></li>
-                        </ul>
-                    </div>
-                    <div class="footer-section">
-                        <h4>Contact</h4>
-                        <ul>
-                            <li>📞 +251-XXX-XXXXXX</li>
-                            <li>📧 info@gimbiehospital.org</li>
-                            <li>📍 Gimbie, Ethiopia</li>
-                            <li>🕐 24/7 Emergency Service</li>
-                        </ul>
-                    </div>
-                    <div class="footer-section">
-                        <h4>Emergency</h4>
-                        <div class="footer-emergency">
-                            <span class="emergency-number">🚑 911</span>
-                            <p>For emergencies, call our 24/7 emergency hotline.</p>
-                            <a href="emergency.html" class="btn btn-emergency btn-small">Get Help Now</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="footer-bottom">
-                    <p>&copy; ${new Date().getFullYear()} Gimbie Adventist General Hospital. All rights reserved.</p>
-                </div>
-            </div>
-        </footer>
-    `;
+    if (isLoggedIn) {
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (registerBtn) registerBtn.style.display = 'none';
+        if (dashboardBtn) {
+            dashboardBtn.style.display = 'flex';
+            const user = getCurrentUser();
+            const roleMap = {
+                'patient': 'patient-dashboard.html',
+                'doctor': 'doctor-dashboard.html',
+                'admin': 'admin-dashboard.html',
+                'nurse': 'nurse-dashboard.html',
+                'reception': 'reception-dashboard.html',
+                'laboratory': 'laboratory-dashboard.html',
+                'pharmacy': 'pharmacy-dashboard.html',
+                'finance': 'finance-dashboard.html'
+            };
+            dashboardBtn.href = roleMap[user?.role] || 'patient-dashboard.html';
+        }
+    } else {
+        if (loginBtn) loginBtn.style.display = 'flex';
+        if (registerBtn) registerBtn.style.display = 'flex';
+        if (dashboardBtn) dashboardBtn.style.display = 'none';
+    }
+}
+
+// ============ Get Started Section ============
+function initGetStarted() {
+    // Already handled by updateGetStartedAuth()
+    // Additional get started features can be added here
 }
 
 // ============ Stats Counter ============
@@ -223,6 +176,45 @@ function initScrollAnimations() {
     });
 }
 
+// ============ Scroll Progress ============
+function initScrollProgress() {
+    const progressBar = document.getElementById('scrollProgress');
+    if (!progressBar) return;
+
+    window.addEventListener('scroll', () => {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = (scrollTop / docHeight) * 100;
+        progressBar.style.width = progress + '%';
+    });
+}
+
+// ============ Theme Toggle ============
+function initThemeToggle() {
+    const themeToggle = document.getElementById('themeToggle');
+    if (!themeToggle) return;
+
+    // Check saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcon(newTheme);
+    });
+}
+
+function updateThemeIcon(theme) {
+    const icon = document.getElementById('themeIcon');
+    if (icon) {
+        icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+}
+
 // ============ AI Assistant ============
 function initAIAssistant() {
     const aiBtn = document.getElementById('aiAssistantBtn');
@@ -270,14 +262,11 @@ function initAIAssistant() {
         const message = chatInput.value.trim();
         if (!message) return;
 
-        // Add user message
         addMessage(message, 'user');
         chatInput.value = '';
 
-        // Show typing indicator
         const typingId = addTypingIndicator();
 
-        // Get AI response
         setTimeout(() => {
             removeTypingIndicator(typingId);
             const response = getAIResponse(message);
@@ -331,7 +320,6 @@ function initAIAssistant() {
     function getAIResponse(message) {
         const lower = message.toLowerCase();
         
-        // Department related
         if (lower.includes('department') || lower.includes('service') || lower.includes('where')) {
             return `We have the following departments:<br>
                 • Emergency (24/7)<br>
@@ -349,17 +337,15 @@ function initAIAssistant() {
                 Visit our <a href="departments.html">Departments page</a> for more details.`;
         }
         
-        // Appointment related
         if (lower.includes('appointment') || lower.includes('book') || lower.includes('schedule')) {
             return `To book an appointment:<br><br>
                 1. Visit our <a href="appointments.html">Appointments page</a><br>
                 2. Choose your department and doctor<br>
                 3. Select a date and time<br>
                 4. Confirm your booking<br><br>
-                You can also call us at ${document.querySelector('.footer-section ul li')?.textContent || '+251-XXX-XXXXXX'} for assistance.`;
+                You can also call us at +251-XXX-XXXXXX for assistance.`;
         }
         
-        // Doctor related
         if (lower.includes('doctor') || lower.includes('physician') || lower.includes('specialist')) {
             return `Our hospital has highly qualified doctors across all specialties.<br><br>
                 You can:<br>
@@ -369,7 +355,6 @@ function initAIAssistant() {
                 • Book appointments directly with your chosen doctor`;
         }
         
-        // Visiting hours
         if (lower.includes('visiting') || lower.includes('hour') || lower.includes('time') || lower.includes('when')) {
             return `Visiting Hours:<br>
                 • General Wards: 10:00 AM - 12:00 PM & 4:00 PM - 6:00 PM<br>
@@ -379,17 +364,15 @@ function initAIAssistant() {
                 Please check with the ward for any special visiting guidelines.`;
         }
         
-        // Emergency
         if (lower.includes('emergency') || lower.includes('urgent') || lower.includes('help') || lower.includes('ambulance')) {
             return `🚑 <strong>Emergency Services</strong><br><br>
                 For immediate medical assistance:<br>
-                • Call our emergency hotline: ${document.querySelector('.emergency-number')?.textContent || '911'}<br>
+                • Call our emergency hotline: +251-XXX-XXXXXX<br>
                 • Visit our 24/7 Emergency Department<br>
                 • Ambulance service available<br><br>
                 <a href="emergency.html" class="btn btn-emergency btn-small">Get Emergency Help</a>`;
         }
         
-        // Laboratory
         if (lower.includes('lab') || lower.includes('test') || lower.includes('result')) {
             return `🔬 <strong>Laboratory Services</strong><br><br>
                 Our laboratory offers:<br>
@@ -402,7 +385,6 @@ function initAIAssistant() {
                 Results are typically available within 24-48 hours.`;
         }
         
-        // Pharmacy
         if (lower.includes('pharmacy') || lower.includes('medicine') || lower.includes('drug') || lower.includes('prescription')) {
             return `💊 <strong>Pharmacy Services</strong><br><br>
                 Our hospital pharmacy provides:<br>
@@ -413,31 +395,20 @@ function initAIAssistant() {
                 The pharmacy is open 8:00 AM - 8:00 PM daily.`;
         }
         
-        // Insurance
-        if (lower.includes('insurance') || lower.includes('payment') || lower.includes('cost') || lower.includes('price')) {
-            return `💳 <strong>Insurance & Payments</strong><br><br>
-                We accept:<br>
-                • Most major insurance providers<br>
-                • Cash payments<br>
-                • Credit/Debit cards<br>
-                • Mobile money<br><br>
-                Please visit our billing office or <a href="contact.html">contact us</a> for more information.`;
+        if (lower.includes('login') || lower.includes('sign up') || lower.includes('register') || lower.includes('account')) {
+            return `🔑 <strong>Patient Portal Access</strong><br><br>
+                To access your patient portal:<br><br>
+                <strong>Login</strong><br>
+                • Use your Patient ID or Email<br>
+                • Enter your password<br>
+                • Access your health records<br><br>
+                <strong>New Patient?</strong><br>
+                • <a href="patient-login.html?register=true">Sign up here</a><br>
+                • Create your account in minutes<br>
+                • Start managing your health online<br><br>
+                <a href="patient-login.html" class="btn btn-primary btn-small">Go to Login</a>`;
         }
         
-        // Careers
-        if (lower.includes('job') || lower.includes('career') || lower.includes('apply') || lower.includes('work')) {
-            return `💼 <strong>Careers at Gimbie Hospital</strong><br><br>
-                We're always looking for talented professionals to join our team.<br><br>
-                Current openings:<br>
-                • Doctors (Various Specialties)<br>
-                • Nurses<br>
-                • Laboratory Technicians<br>
-                • Pharmacists<br>
-                • Administrative Staff<br><br>
-                Visit our <a href="careers.html">Careers page</a> to view all openings and apply.`;
-        }
-        
-        // Hospital info
         if (lower.includes('about') || lower.includes('history') || lower.includes('mission')) {
             return `🏥 <strong>About Gimbie Adventist General Hospital</strong><br><br>
                 Founded in 1960, Gimbie Adventist Hospital has been serving the community with excellence in healthcare for over 60 years.<br><br>
@@ -452,7 +423,6 @@ function initAIAssistant() {
                 <a href="about.html">Learn more about us →</a>`;
         }
         
-        // Default response
         return `Thank you for your question! I'm here to help.<br><br>
             I can assist you with information about:<br>
             • Departments and services<br>
@@ -462,7 +432,8 @@ function initAIAssistant() {
             • Laboratory and pharmacy services<br>
             • Insurance and billing<br>
             • Career opportunities<br>
-            • Emergency services<br><br>
+            • Emergency services<br>
+            • Patient portal login and registration<br><br>
             Please ask your specific question and I'll do my best to assist you. 🙏`;
     }
 }
@@ -504,7 +475,7 @@ async function loadDepartments() {
         
         if (!grid) return;
         
-        grid.innerHTML = departments.map(dept => `
+        grid.innerHTML = departments.slice(0, 6).map(dept => `
             <div class="department-card glass" onclick="window.location.href='departments.html?dept=${encodeURIComponent(dept.name)}'">
                 <span class="department-icon">${getDepartmentIcon(dept.name)}</span>
                 <h3>${dept.name}</h3>
@@ -577,9 +548,23 @@ async function loadStatistics() {
         const statElements = document.querySelectorAll('.stat-number[data-target]');
         
         statElements.forEach(el => {
-            const key = el.closest('.stat-item')?.querySelector('.stat-label')?.textContent?.toLowerCase();
-            if (key) {
-                const value = stats[key.replace(/\s/g, '')] || stats[key] || 0;
+            const parent = el.closest('.stat-item');
+            const label = parent?.querySelector('.stat-label')?.textContent?.toLowerCase();
+            if (label) {
+                const keyMap = {
+                    'doctors': 'doctors',
+                    'nurses': 'nurses',
+                    'staff': 'staff',
+                    'departments': 'departments',
+                    'beds': 'beds',
+                    'patients served': 'patients',
+                    'surgeries': 'surgeries',
+                    'ambulances': 'ambulances',
+                    'lab tests': 'labTests',
+                    'years of service': 'yearsOfService'
+                };
+                const key = keyMap[label] || label.replace(/\s/g, '');
+                const value = stats[key] || 0;
                 animateNumber(el, value);
             }
         });
@@ -606,7 +591,7 @@ function showToast(message, type = 'success', duration = 3000) {
         transition: transform 0.3s ease;
         max-width: 400px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-        background: ${type === 'success' ? '#34c759' : type === 'error' ? '#ff6b6b' : type === 'warning' ? '#f7b731' : '#4a9eff'};
+        background: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : type === 'warning' ? '#f39c12' : '#3498db'};
         color: white;
     `;
     
