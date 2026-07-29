@@ -1,0 +1,40 @@
+{
+  "name": "Gimbie Adventist General Hospital",
+  "short_name": "Gimbie Hospital",
+  "description": "Modern Healthcare Excellence - Gimbie Adventist General Hospital",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a3a5c",
+  "theme_color": "#1a3a5c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["health", "medical", "hospital"],
+  "shortcuts": [
+    {
+      "name": "Book Appointment",
+      "url": "/appointments.html",
+      "description": "Book a new appointment"
+    },
+    {
+      "name": "Emergency",
+      "url": "/emergency.html",
+      "description": "Emergency services"
+    },
+    {
+      "name": "Patient Dashboard",
+      "url": "/patient-dashboard.html",
+      "description": "View your health records"
+    }
+  ]
+}
