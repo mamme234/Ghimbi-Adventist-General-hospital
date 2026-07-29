@@ -41,7 +41,9 @@
         <div class="loader-content">
             <div class="loader-logo">🏥</div>
             <div class="loader-text">Gimbie Adventist Hospital</div>
-            <div class="loader-spinner"></div>
+            <div class="loader-progress">
+                <div class="loader-progress-bar"></div>
+            </div>
             <p style="color: rgba(255,255,255,0.3); margin-top: 20px; font-size: 14px;">Welcome to Excellence in Healthcare</p>
         </div>
     </div>
@@ -176,35 +178,45 @@
                     </button>
                 </div>
 
-                <!-- Get Started Section -->
+                <!-- ============ GET STARTED SECTION ============ -->
                 <div class="hero-get-started" id="heroGetStarted">
                     <div class="get-started-badge">
                         <span class="badge-icon">🚀</span>
                         <span>Get Started</span>
                     </div>
-                    <div class="get-started-options">
+                    
+                    <div class="get-started-options" id="getStartedOptions">
+                        <!-- Login Card -->
                         <a href="patient-login.html" class="get-started-btn login-btn">
                             <span class="btn-icon">🔑</span>
                             <div>
                                 <strong>Login</strong>
                                 <span>Access your health records</span>
                             </div>
+                            <span class="get-started-arrow">→</span>
                         </a>
+                        
+                        <!-- Sign Up Card -->
                         <a href="patient-login.html?register=true" class="get-started-btn register-btn">
                             <span class="btn-icon">📝</span>
                             <div>
                                 <strong>Sign Up</strong>
                                 <span>Create your patient account</span>
                             </div>
+                            <span class="get-started-arrow">→</span>
                         </a>
+                        
+                        <!-- Dashboard Card (Hidden by default, shown when logged in) -->
                         <a href="patient-dashboard.html" class="get-started-btn dashboard-btn" id="dashboardQuickLink" style="display:none;">
                             <span class="btn-icon">📊</span>
                             <div>
                                 <strong>Dashboard</strong>
                                 <span>Go to your dashboard</span>
                             </div>
+                            <span class="get-started-arrow">→</span>
                         </a>
                     </div>
+                    
                     <div class="get-started-features">
                         <div class="feature-item">
                             <span>📅</span>
@@ -1053,4 +1065,4 @@
     <script src="map.js"></script>
     <script src="main.js"></script>
 </body>
-    </html>
+                            </html>
