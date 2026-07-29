@@ -1,0 +1,236 @@
+/* ============ Emergency Page Styles ============ */
+
+.emergency-section {
+    padding: 40px 0 80px;
+    background: #f0f4f8;
+    min-height: calc(100vh - 200px);
+}
+
+.emergency-hero {
+    background: linear-gradient(135deg, #dc3545, #ff4444);
+    border-radius: var(--radius-lg);
+    padding: 60px 48px;
+    margin-bottom: 40px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.emergency-hero::before {
+    content: '🚨';
+    position: absolute;
+    right: -50px;
+    bottom: -50px;
+    font-size: 300px;
+    opacity: 0.1;
+}
+
+.emergency-hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+}
+
+.emergency-badge {
+    display: inline-block;
+    padding: 4px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+}
+
+.emergency-hero h1 {
+    font-family: var(--font-heading);
+    font-size: 42px;
+    margin-bottom: 16px;
+}
+
+.emergency-hero p {
+    font-size: 18px;
+    opacity: 0.9;
+    margin-bottom: 24px;
+    line-height: 1.7;
+}
+
+.emergency-contacts {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.emergency-contact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.contact-icon {
+    font-size: 24px;
+}
+
+.emergency-number {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.emergency-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.emergency-card {
+    padding: 30px 24px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.emergency-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
+}
+
+.emergency-card-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.emergency-card h3 {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+}
+
+.emergency-card p {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.emergency-instructions {
+    padding: 40px;
+    margin-bottom: 40px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.emergency-instructions h2 {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    color: var(--primary-dark);
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.instructions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+}
+
+.instruction-step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.instruction-step h4 {
+    font-size: 16px;
+    color: var(--primary-dark);
+    margin-bottom: 4px;
+}
+
+.instruction-step p {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.emergency-location {
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.emergency-location h2 {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    color: var(--primary-dark);
+    margin-bottom: 16px;
+}
+
+.location-info p {
+    margin-bottom: 4px;
+    color: #444;
+}
+
+.location-map {
+    margin-top: 16px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .emergency-hero {
+        padding: 40px 24px;
+    }
+    
+    .emergency-hero h1 {
+        font-size: 32px;
+    }
+    
+    .emergency-contacts {
+        flex-direction: column;
+    }
+    
+    .emergency-instructions {
+        padding: 24px;
+    }
+    
+    .instructions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .emergency-location {
+        padding: 24px;
+    }
+}
