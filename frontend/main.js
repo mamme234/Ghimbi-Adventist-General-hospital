@@ -68,7 +68,7 @@ function updateAuthLinks() {
     } else {
         navAuth.innerHTML = `
             <a href="patient-login.html" class="nav-login">Login</a>
-            <a href="patient-login.html?register=true" class="nav-register">Register</a>
+            <a href="patient-signup.html" class="nav-register">Register</a>
         `;
     }
 }
@@ -106,8 +106,10 @@ function updateGetStartedAuth() {
             
             // Update text
             const name = user?.firstName || 'Patient';
-            dashboardBtn.querySelector('strong').textContent = `Welcome, ${name}`;
-            dashboardBtn.querySelector('span:last-child').textContent = 'Go to your dashboard';
+            const strongEl = dashboardBtn.querySelector('strong');
+            const spanEl = dashboardBtn.querySelector('.btn-left span:last-child');
+            if (strongEl) strongEl.textContent = `Welcome, ${name}`;
+            if (spanEl) spanEl.textContent = 'Go to your dashboard';
         }
     } else {
         // Show login and register buttons
@@ -377,10 +379,24 @@ function initAIAssistant() {
                 • Enter your password<br>
                 • Access your health records<br><br>
                 <strong>New Patient?</strong><br>
-                • <a href="patient-login.html?register=true">Sign up here</a><br>
+                • <a href="patient-signup.html">Sign up here</a><br>
                 • Create your account in minutes<br>
                 • Start managing your health online<br><br>
                 <a href="patient-login.html" class="btn btn-primary btn-small">Go to Login</a>`;
+        }
+        
+        if (lower.includes('about') || lower.includes('history') || lower.includes('mission')) {
+            return `🏥 <strong>About Gimbie Adventist General Hospital</strong><br><br>
+                Founded in 1960, Gimbie Adventist Hospital has been serving the community with excellence in healthcare for over 60 years.<br><br>
+                <strong>Our Mission:</strong><br>
+                To provide quality, compassionate healthcare to all, regardless of their background or ability to pay.<br><br>
+                <strong>Our Values:</strong><br>
+                • Excellence in Patient Care<br>
+                • Compassion and Respect<br>
+                • Community Service<br>
+                • Medical Excellence<br>
+                • Innovation and Technology<br><br>
+                <a href="about.html">Learn more about us →</a>`;
         }
         
         return `Thank you for your question! I'm here to help.<br><br>
