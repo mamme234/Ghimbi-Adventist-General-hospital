@@ -1,9 +1,12 @@
 // ============ API Configuration ============
-const API_BASE_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000/api' 
-    : 'https://ghimbi-adventist-general-hospital.onrender.com/api';
+// Use the Render backend URL
+const API_BASE_URL = 'https://ghimbi-adventist-general-hospital.onrender.com/api';
+
+// For local development, uncomment this:
+// const API_BASE_URL = 'http://localhost:5000/api';
 
 const API = {
+    // Auth Routes
     auth: {
         login: `${API_BASE_URL}/auth/login`,
         register: `${API_BASE_URL}/auth/register`,
@@ -13,21 +16,63 @@ const API = {
         profile: `${API_BASE_URL}/auth/profile`,
         changePassword: `${API_BASE_URL}/auth/change-password`
     },
+    // Patient Routes
     patients: {
         register: `${API_BASE_URL}/patients/register`,
         search: `${API_BASE_URL}/patients/search`,
         get: (id) => `${API_BASE_URL}/patients/${id}`
     },
-    departments: `${API_BASE_URL}/departments`,
-    doctors: `${API_BASE_URL}/doctors`,
+    // Consultation Routes
+    consultations: {
+        create: `${API_BASE_URL}/consultations`,
+        getAll: `${API_BASE_URL}/consultations`,
+        get: (id) => `${API_BASE_URL}/consultations/${id}`
+    },
+    // Laboratory Routes
+    laboratory: {
+        create: `${API_BASE_URL}/laboratory`,
+        getAll: `${API_BASE_URL}/laboratory`,
+        update: (id) => `${API_BASE_URL}/laboratory/${id}`
+    },
+    // Prescription Routes
+    prescriptions: {
+        create: `${API_BASE_URL}/prescriptions`,
+        getAll: `${API_BASE_URL}/prescriptions`,
+        get: (id) => `${API_BASE_URL}/prescriptions/${id}`
+    },
+    // Pharmacy Routes
+    pharmacy: {
+        medicines: `${API_BASE_URL}/medicines`,
+        createMedicine: `${API_BASE_URL}/medicines`,
+        updateMedicine: (id) => `${API_BASE_URL}/medicines/${id}`,
+        dispense: `${API_BASE_URL}/pharmacy/dispense`,
+        dispenses: `${API_BASE_URL}/pharmacy/dispenses`
+    },
+    // Billing Routes
+    billing: {
+        create: `${API_BASE_URL}/billing`,
+        getAll: `${API_BASE_URL}/billing`,
+        processPayment: (id) => `${API_BASE_URL}/billing/${id}/payment`
+    },
+    // Admission Routes
+    admissions: {
+        create: `${API_BASE_URL}/admissions`,
+        getAll: `${API_BASE_URL}/admissions`,
+        discharge: (id) => `${API_BASE_URL}/admissions/${id}/discharge`
+    },
+    // Appointment Routes
     appointments: {
         create: `${API_BASE_URL}/appointments`,
         getAll: `${API_BASE_URL}/appointments`,
         update: (id) => `${API_BASE_URL}/appointments/${id}`
     },
-    statistics: `${API_BASE_URL}/statistics`,
+    // Public Routes
+    departments: `${API_BASE_URL}/departments`,
+    doctors: `${API_BASE_URL}/doctors`,
     news: `${API_BASE_URL}/news`,
     gallery: `${API_BASE_URL}/gallery`,
+    statistics: `${API_BASE_URL}/statistics`,
+    // Admin Routes
     admin: {
         users: `${API_BASE_URL}/admin/users`,
         updateUserStatus: (id) => `${API_BASE_URL}/admin/users/${id}/status`,
@@ -38,10 +83,10 @@ const API = {
         statistics: `${API_BASE_URL}/admin/statistics`,
         dashboard: `${API_BASE_URL}/admin/dashboard`
     },
+    // Dashboard Routes
     dashboard: {
         patient: `${API_BASE_URL}/dashboard/patient`,
-        admin: `${API_BASE_URL}/admin/dashboard`,
-        doctor: `${API_BASE_URL}/dashboard/doctor`
+        admin: `${API_BASE_URL}/admin/dashboard`
     }
 };
 
@@ -69,6 +114,7 @@ class ApiService {
         };
 
         try {
+            console.log('📡 API Request:', endpoint);
             const response = await fetch(endpoint, config);
             const data = await response.json();
 
@@ -90,7 +136,7 @@ class ApiService {
 
             return data;
         } catch (error) {
-            console.error('API Error:', error);
+            console.error('❌ API Error:', error);
             throw error;
         }
     }
@@ -132,25 +178,35 @@ class ApiService {
         localStorage.removeItem('user');
     }
 
-    // Auth Methods
+    // ============ Auth Methods ============
     async login(email, password) {
-        const data = await this.request(API.auth.login, {
-            method: 'POST',
-            body: JSON.stringify({ email, password })
-        });
-        if (data.token) {
-            this.setToken(data.token);
-            this.setRefreshToken(data.refreshToken);
-            localStorage.setItem('user', JSON.stringify(data.user));
+        try {
+            const data = await this.request(API.auth.login, {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            if (data.token) {
+                this.setToken(data.token);
+                this.setRefreshToken(data.refreshToken);
+                localStorage.setItem('user', JSON.stringify(data.user));
+            }
+            return data;
+        } catch (error) {
+            console.error('Login error:', error);
+            throw error;
         }
-        return data;
     }
 
     async register(userData) {
-        return this.request(API.auth.register, {
-            method: 'POST',
-            body: JSON.stringify(userData)
-        });
+        try {
+            return await this.request(API.auth.register, {
+                method: 'POST',
+                body: JSON.stringify(userData)
+            });
+        } catch (error) {
+            console.error('Register error:', error);
+            throw error;
+        }
     }
 
     async logout() {
@@ -181,7 +237,161 @@ class ApiService {
         });
     }
 
-    // Public Methods
+    // ============ Patient Methods ============
+    async registerPatient(data) {
+        return this.request(API.patients.register, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async searchPatients(query) {
+        return this.request(`${API.patients.search}?query=${encodeURIComponent(query)}`);
+    }
+
+    async getPatient(id) {
+        return this.request(API.patients.get(id));
+    }
+
+    // ============ Consultation Methods ============
+    async createConsultation(data) {
+        return this.request(API.consultations.create, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getConsultations(params = '') {
+        return this.request(`${API.consultations.getAll}${params}`);
+    }
+
+    async getConsultation(id) {
+        return this.request(API.consultations.get(id));
+    }
+
+    // ============ Laboratory Methods ============
+    async createLabRequest(data) {
+        return this.request(API.laboratory.create, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getLabRequests(params = '') {
+        return this.request(`${API.laboratory.getAll}${params}`);
+    }
+
+    async updateLabRequest(id, data) {
+        return this.request(API.laboratory.update(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    // ============ Prescription Methods ============
+    async createPrescription(data) {
+        return this.request(API.prescriptions.create, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getPrescriptions(params = '') {
+        return this.request(`${API.prescriptions.getAll}${params}`);
+    }
+
+    async getPrescription(id) {
+        return this.request(API.prescriptions.get(id));
+    }
+
+    // ============ Pharmacy Methods ============
+    async getMedicines(params = '') {
+        return this.request(`${API.pharmacy.medicines}${params}`);
+    }
+
+    async createMedicine(data) {
+        return this.request(API.pharmacy.createMedicine, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async updateMedicine(id, data) {
+        return this.request(API.pharmacy.updateMedicine(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async dispenseMedicine(data) {
+        return this.request(API.pharmacy.dispense, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getDispenses(params = '') {
+        return this.request(`${API.pharmacy.dispenses}${params}`);
+    }
+
+    // ============ Billing Methods ============
+    async createBill(data) {
+        return this.request(API.billing.create, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getBills(params = '') {
+        return this.request(`${API.billing.getAll}${params}`);
+    }
+
+    async processPayment(id, data) {
+        return this.request(API.billing.processPayment(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    // ============ Admission Methods ============
+    async admitPatient(data) {
+        return this.request(API.admissions.create, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getAdmissions(params = '') {
+        return this.request(`${API.admissions.getAll}${params}`);
+    }
+
+    async dischargePatient(id, data) {
+        return this.request(API.admissions.discharge(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    // ============ Appointment Methods ============
+    async createAppointment(data) {
+        return this.request(API.appointments.create, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getAppointments(params = '') {
+        return this.request(`${API.appointments.getAll}${params}`);
+    }
+
+    async updateAppointment(id, data) {
+        return this.request(API.appointments.update(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    // ============ Public Methods ============
     async getDepartments() {
         return this.request(API.departments);
     }
@@ -200,6 +410,58 @@ class ApiService {
 
     async getStatistics() {
         return this.request(API.statistics);
+    }
+
+    // ============ Admin Methods ============
+    async getUsers(params = '') {
+        return this.request(`${API.admin.users}${params}`);
+    }
+
+    async updateUserStatus(id, data) {
+        return this.request(API.admin.updateUserStatus(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getAuditLogs(params = '') {
+        return this.request(`${API.admin.auditLogs}${params}`);
+    }
+
+    async createDepartment(data) {
+        return this.request(API.admin.departments, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async updateDepartment(id, data) {
+        return this.request(`${API.admin.departments}/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async createNews(data) {
+        return this.request(API.admin.news, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async createGallery(data) {
+        return this.request(API.admin.gallery, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getAdminDashboard() {
+        return this.request(API.dashboard.admin);
+    }
+
+    async getPatientDashboard() {
+        return this.request(API.dashboard.patient);
     }
 }
 
@@ -229,7 +491,22 @@ function hasRole(role) {
     return getUserRole() === role;
 }
 
+function isAdmin() {
+    return hasRole('admin') || hasRole('superadmin');
+}
+
+function isDoctor() {
+    return hasRole('doctor');
+}
+
+function isPatient() {
+    return hasRole('patient');
+}
+
 window.getCurrentUser = getCurrentUser;
 window.isAuthenticated = isAuthenticated;
 window.getUserRole = getUserRole;
 window.hasRole = hasRole;
+window.isAdmin = isAdmin;
+window.isDoctor = isDoctor;
+window.isPatient = isPatient;
