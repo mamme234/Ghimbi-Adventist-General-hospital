@@ -1,12 +1,15 @@
 // ============ API Configuration ============
-// Your Render backend URL
+
+// ✅ USE THIS URL - Your Render backend is working!
 const API_BASE_URL = 'https://ghimbi-adventist-general-hospital.onrender.com/api';
 
-// For local development, uncomment this line and comment the one above
+// ❌ DO NOT use localhost in production
 // const API_BASE_URL = 'http://localhost:5000/api';
 
+console.log('📡 API Base URL:', API_BASE_URL);
+
+// ============ REST OF YOUR API CONFIGURATION ============
 const API = {
-    // Auth Routes
     auth: {
         login: `${API_BASE_URL}/auth/login`,
         register: `${API_BASE_URL}/auth/register`,
@@ -16,25 +19,21 @@ const API = {
         profile: `${API_BASE_URL}/auth/profile`,
         changePassword: `${API_BASE_URL}/auth/change-password`
     },
-    // Public Routes
     departments: `${API_BASE_URL}/departments`,
     doctors: `${API_BASE_URL}/doctors`,
     statistics: `${API_BASE_URL}/statistics`,
     news: `${API_BASE_URL}/news`,
     gallery: `${API_BASE_URL}/gallery`,
-    // Patient Routes
     patients: {
         register: `${API_BASE_URL}/patients/register`,
         search: `${API_BASE_URL}/patients/search`,
         get: (id) => `${API_BASE_URL}/patients/${id}`
     },
-    // Appointment Routes
     appointments: {
         create: `${API_BASE_URL}/appointments`,
         getAll: `${API_BASE_URL}/appointments`,
         update: (id) => `${API_BASE_URL}/appointments/${id}`
     },
-    // Admin Routes
     admin: {
         users: `${API_BASE_URL}/admin/users`,
         updateUserStatus: (id) => `${API_BASE_URL}/admin/users/${id}/status`,
@@ -45,19 +44,16 @@ const API = {
         statistics: `${API_BASE_URL}/admin/statistics`,
         dashboard: `${API_BASE_URL}/admin/dashboard`
     },
-    // Dashboard Routes
     dashboard: {
         patient: `${API_BASE_URL}/dashboard/patient`,
         admin: `${API_BASE_URL}/admin/dashboard`,
         doctor: `${API_BASE_URL}/dashboard/doctor`
     },
-    // Laboratory Routes
     laboratory: {
         create: `${API_BASE_URL}/laboratory`,
         getAll: `${API_BASE_URL}/laboratory`,
         update: (id) => `${API_BASE_URL}/laboratory/${id}`
     },
-    // Pharmacy Routes
     pharmacy: {
         medicines: `${API_BASE_URL}/medicines`,
         createMedicine: `${API_BASE_URL}/medicines`,
@@ -65,31 +61,26 @@ const API = {
         dispense: `${API_BASE_URL}/pharmacy/dispense`,
         dispenses: `${API_BASE_URL}/pharmacy/dispenses`
     },
-    // Billing Routes
     billing: {
         create: `${API_BASE_URL}/billing`,
         getAll: `${API_BASE_URL}/billing`,
         processPayment: (id) => `${API_BASE_URL}/billing/${id}/payment`
     },
-    // Admissions Routes
     admissions: {
         create: `${API_BASE_URL}/admissions`,
         getAll: `${API_BASE_URL}/admissions`,
         discharge: (id) => `${API_BASE_URL}/admissions/${id}/discharge`
     },
-    // Prescription Routes
     prescriptions: {
         create: `${API_BASE_URL}/prescriptions`,
         getAll: `${API_BASE_URL}/prescriptions`,
         get: (id) => `${API_BASE_URL}/prescriptions/${id}`
     },
-    // Consultation Routes
     consultations: {
         create: `${API_BASE_URL}/consultations`,
         getAll: `${API_BASE_URL}/consultations`,
         get: (id) => `${API_BASE_URL}/consultations/${id}`
     },
-    // Careers Routes
     careers: {
         getAll: `${API_BASE_URL}/careers`,
         create: `${API_BASE_URL}/careers`,
@@ -124,79 +115,22 @@ class ApiService {
             console.log('📡 API Request:', endpoint);
             const response = await fetch(endpoint, config);
             
-            // Handle 404 - endpoint not found
-            if (response.status === 404) {
-                console.error('❌ Route not found:', endpoint);
-                throw new Error('The requested API endpoint was not found. Please check the URL.');
-            }
-
-            const data = await response.json();
-
-            // Handle 401 - try to refresh token
-            if (response.status === 401 && this.refreshToken) {
-                const refreshed = await this.refreshAccessToken();
-                if (refreshed) {
-                    headers['Authorization'] = `Bearer ${this.token}`;
-                    const retryResponse = await fetch(endpoint, {
-                        ...config,
-                        headers
-                    });
-                    return await retryResponse.json();
-                }
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
             }
 
             if (!response.ok) {
-                throw new Error(data.error || 'Request failed');
+                throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
             }
 
             return data;
         } catch (error) {
             console.error('❌ API Error:', error.message);
-            
-            // Check if it's a connection error
-            if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
-                throw new Error('Cannot connect to the server. Please check if the backend is running.');
-            }
-            
             throw error;
         }
-    }
-
-    async refreshAccessToken() {
-        try {
-            const response = await fetch(API.auth.refresh, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refreshToken: this.refreshToken })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                this.token = data.token;
-                localStorage.setItem('token', data.token);
-                return true;
-            }
-            return false;
-        } catch (error) {
-            return false;
-        }
-    }
-
-    setToken(token) {
-        this.token = token;
-        localStorage.setItem('token', token);
-    }
-
-    setRefreshToken(refreshToken) {
-        this.refreshToken = refreshToken;
-        localStorage.setItem('refreshToken', refreshToken);
-    }
-
-    clearTokens() {
-        this.token = null;
-        this.refreshToken = null;
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
     }
 
     // ============ Auth Methods ============
@@ -208,8 +142,12 @@ class ApiService {
                 body: JSON.stringify({ email: identifier, password })
             });
             if (data.token) {
-                this.setToken(data.token);
-                this.setRefreshToken(data.refreshToken);
+                this.token = data.token;
+                localStorage.setItem('token', data.token);
+                if (data.refreshToken) {
+                    this.refreshToken = data.refreshToken;
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                }
                 localStorage.setItem('user', JSON.stringify(data.user));
                 console.log('✅ Login successful');
             }
@@ -228,8 +166,12 @@ class ApiService {
                 body: JSON.stringify(userData)
             });
             if (data.token) {
-                this.setToken(data.token);
-                this.setRefreshToken(data.refreshToken);
+                this.token = data.token;
+                localStorage.setItem('token', data.token);
+                if (data.refreshToken) {
+                    this.refreshToken = data.refreshToken;
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                }
                 localStorage.setItem('user', JSON.stringify(data.user));
                 console.log('✅ Registration successful');
             }
@@ -246,42 +188,12 @@ class ApiService {
         } catch (error) {
             console.error('Logout error:', error);
         }
-        this.clearTokens();
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        this.token = null;
+        this.refreshToken = null;
         window.location.href = '/index.html';
-    }
-
-    async getMe() {
-        return this.request(API.auth.me);
-    }
-
-    async updateProfile(data) {
-        return this.request(API.auth.profile, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
-    }
-
-    async changePassword(currentPassword, newPassword) {
-        return this.request(API.auth.changePassword, {
-            method: 'PUT',
-            body: JSON.stringify({ currentPassword, newPassword })
-        });
-    }
-
-    // ============ Patient Methods ============
-    async registerPatient(data) {
-        return this.request(API.patients.register, {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
-    }
-
-    async searchPatients(query) {
-        return this.request(`${API.patients.search}?query=${encodeURIComponent(query)}`);
-    }
-
-    async getPatient(id) {
-        return this.request(API.patients.get(id));
     }
 
     // ============ Public Methods ============
@@ -541,23 +453,7 @@ function hasRole(role) {
     return getUserRole() === role;
 }
 
-function isAdmin() {
-    return hasRole('admin') || hasRole('superadmin');
-}
-
-function isDoctor() {
-    return hasRole('doctor');
-}
-
-function isPatient() {
-    return hasRole('patient');
-}
-
-// Make helper functions globally available
 window.getCurrentUser = getCurrentUser;
 window.isAuthenticated = isAuthenticated;
 window.getUserRole = getUserRole;
 window.hasRole = hasRole;
-window.isAdmin = isAdmin;
-window.isDoctor = isDoctor;
-window.isPatient = isPatient;
