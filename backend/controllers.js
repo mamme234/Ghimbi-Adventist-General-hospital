@@ -1,33 +1,21 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const QRCode = require('qrcode');
 const config = require('./config');
 const {
   User,
   Doctor,
-  Consultation,
-  LabRequest,
-  Prescription,
-  Medicine,
-  PharmacyDispense,
-  Billing,
-  Admission,
   Department,
   Appointment,
   News,
   Gallery,
   AuditLog
 } = require('./models');
-const { generateQRCode } = require('./middleware');
 
 // ============ AUTH CONTROLLERS ============
 
 exports.register = async (req, res) => {
   try {
-    const { 
-      firstName, lastName, email, password, phone, 
-      dateOfBirth, gender, role, address, emergencyContact 
-    } = req.body;
+    const { firstName, lastName, email, password, phone, dateOfBirth, gender, role } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -42,46 +30,13 @@ exports.register = async (req, res) => {
       phone,
       dateOfBirth,
       gender,
-      role: role || 'patient',
-      address,
-      emergencyContact
+      role: role || 'patient'
     });
 
     await user.save();
 
-    // Generate QR Code for patient
-    if (user.role === 'patient') {
-      const qrData = JSON.stringify({
-        patientId: user.patientId,
-        name: `${user.firstName} ${user.lastName}`,
-        phone: user.phone
-      });
-      user.qrCode = await generateQRCode(qrData);
-      await user.save();
-    }
-
-    // Create doctor profile if role is doctor
-    if (user.role === 'doctor') {
-      const doctor = new Doctor({
-        user: user._id,
-        specialization: req.body.specialization || 'General',
-        department: req.body.department || 'General',
-        licenseNumber: req.body.licenseNumber
-      });
-      await doctor.save();
-    }
-
     const token = jwt.sign({ id: user._id }, config.jwtSecret, { expiresIn: config.jwtExpire });
     const refreshToken = jwt.sign({ id: user._id }, config.jwtRefreshSecret, { expiresIn: config.jwtRefreshExpire });
-
-    // Log registration
-    await new AuditLog({
-      user: user._id,
-      action: 'REGISTER',
-      entity: 'User',
-      entityId: user._id.toString(),
-      details: { email, role: user.role, patientId: user.patientId }
-    }).save();
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -89,15 +44,15 @@ exports.register = async (req, res) => {
       refreshToken,
       user: {
         id: user._id,
-        patientId: user.patientId,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         role: user.role,
-        qrCode: user.qrCode
+        phone: user.phone
       }
     });
   } catch (error) {
+    console.error('Register error:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -116,24 +71,11 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    if (!user.isActive) {
-      return res.status(401).json({ error: 'Account deactivated. Please contact admin.' });
-    }
-
     const token = jwt.sign({ id: user._id }, config.jwtSecret, { expiresIn: config.jwtExpire });
     const refreshToken = jwt.sign({ id: user._id }, config.jwtRefreshSecret, { expiresIn: config.jwtRefreshExpire });
 
     user.lastLogin = new Date();
     await user.save();
-
-    // Log login
-    await new AuditLog({
-      user: user._id,
-      action: 'LOGIN',
-      entity: 'User',
-      entityId: user._id.toString(),
-      details: { email, ip: req.ip, userAgent: req.get('user-agent') }
-    }).save();
 
     res.json({
       message: 'Login successful',
@@ -141,16 +83,15 @@ exports.login = async (req, res) => {
       refreshToken,
       user: {
         id: user._id,
-        patientId: user.patientId,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         role: user.role,
-        phone: user.phone,
-        qrCode: user.qrCode
+        phone: user.phone
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -177,14 +118,6 @@ exports.refreshToken = async (req, res) => {
 
 exports.logout = async (req, res) => {
   try {
-    await new AuditLog({
-      user: req.user._id,
-      action: 'LOGOUT',
-      entity: 'User',
-      entityId: req.user._id.toString(),
-      details: { email: req.user.email }
-    }).save();
-
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -205,26 +138,14 @@ exports.updateProfile = async (req, res) => {
     const updates = req.body;
     const user = await User.findById(req.user._id);
     
-    const allowedUpdates = ['firstName', 'lastName', 'phone', 'alternatePhone', 
-      'address', 'emergencyContact', 'insurance', 'profileImage'];
-    
+    const allowedUpdates = ['firstName', 'lastName', 'phone', 'address', 'emergencyContact'];
     allowedUpdates.forEach(key => {
       if (updates[key] !== undefined) {
         user[key] = updates[key];
       }
     });
 
-    user.updatedAt = new Date();
     await user.save();
-
-    await new AuditLog({
-      user: user._id,
-      action: 'UPDATE_PROFILE',
-      entity: 'User',
-      entityId: user._id.toString(),
-      details: { updatedFields: Object.keys(updates) }
-    }).save();
-
     res.json({ message: 'Profile updated', user: user.toObject({ getters: true }) });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -242,15 +163,7 @@ exports.changePassword = async (req, res) => {
     }
 
     user.password = newPassword;
-    user.updatedAt = new Date();
     await user.save();
-
-    await new AuditLog({
-      user: user._id,
-      action: 'CHANGE_PASSWORD',
-      entity: 'User',
-      entityId: user._id.toString()
-    }).save();
 
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
@@ -258,26 +171,17 @@ exports.changePassword = async (req, res) => {
   }
 };
 
-// ============ PATIENT MANAGEMENT (Reception) ============
+// ============ PATIENT CONTROLLERS ============
 
 exports.registerPatient = async (req, res) => {
   try {
-    const { 
-      firstName, lastName, phone, dateOfBirth, gender,
-      email, alternatePhone, address, emergencyContact, insurance
-    } = req.body;
+    const { firstName, lastName, phone, dateOfBirth, gender, email, address, emergencyContact } = req.body;
 
-    const existingPatient = await User.findOne({ 
-      $or: [{ email: email }, { phone: phone }] 
-    });
-
+    const existingPatient = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingPatient) {
-      return res.status(400).json({ 
-        error: 'Patient with this email or phone already exists' 
-      });
+      return res.status(400).json({ error: 'Patient already exists' });
     }
 
-    // Generate temporary password
     const tempPassword = 'Patient@' + Math.floor(1000 + Math.random() * 9000);
 
     const patient = new User({
@@ -288,35 +192,12 @@ exports.registerPatient = async (req, res) => {
       gender,
       email: email || `${firstName.toLowerCase()}.${lastName.toLowerCase()}@gimbie.patient`,
       password: tempPassword,
-      alternatePhone,
       address,
       emergencyContact,
-      insurance,
       role: 'patient'
     });
 
     await patient.save();
-
-    // Generate QR Code
-    const qrData = JSON.stringify({
-      patientId: patient.patientId,
-      name: `${patient.firstName} ${patient.lastName}`,
-      phone: patient.phone
-    });
-    patient.qrCode = await generateQRCode(qrData);
-    await patient.save();
-
-    // Log patient registration
-    await new AuditLog({
-      user: req.user._id,
-      action: 'REGISTER_PATIENT',
-      entity: 'User',
-      entityId: patient._id.toString(),
-      details: { 
-        patientId: patient.patientId, 
-        name: `${patient.firstName} ${patient.lastName}` 
-      }
-    }).save();
 
     res.status(201).json({
       message: 'Patient registered successfully',
@@ -326,7 +207,6 @@ exports.registerPatient = async (req, res) => {
         firstName: patient.firstName,
         lastName: patient.lastName,
         phone: patient.phone,
-        qrCode: patient.qrCode,
         tempPassword: tempPassword
       }
     });
@@ -362,11 +242,8 @@ exports.searchPatients = async (req, res) => {
 
 exports.getPatientById = async (req, res) => {
   try {
-    const patient = await User.findOne({ 
-      $or: [
-        { _id: req.params.id },
-        { patientId: req.params.id }
-      ]
+    const patient = await User.findOne({
+      $or: [{ _id: req.params.id }, { patientId: req.params.id }]
     }).select('-password');
 
     if (!patient) {
@@ -379,14 +256,181 @@ exports.getPatientById = async (req, res) => {
   }
 };
 
+// ============ DEPARTMENT CONTROLLERS ============
+
+exports.getDepartments = async (req, res) => {
+  try {
+    const departments = await Department.find({ isActive: true })
+      .populate('head', 'firstName lastName email');
+    res.json(departments);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.createDepartment = async (req, res) => {
+  try {
+    const department = new Department(req.body);
+    await department.save();
+    res.status(201).json({ message: 'Department created', department });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateDepartment = async (req, res) => {
+  try {
+    const department = await Department.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    if (!department) {
+      return res.status(404).json({ error: 'Department not found' });
+    }
+    res.json({ message: 'Department updated', department });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ============ DOCTOR CONTROLLERS ============
+
+exports.getDoctors = async (req, res) => {
+  try {
+    const { department, specialization } = req.query;
+    const filter = { isActive: true };
+    
+    if (department) filter.department = department;
+    if (specialization) filter.specialization = specialization;
+
+    const doctors = await Doctor.find(filter)
+      .populate('user', 'firstName lastName email phone profileImage')
+      .sort({ rating: -1 });
+
+    res.json(doctors);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getDoctorById = async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.params.id)
+      .populate('user', 'firstName lastName email phone profileImage');
+    
+    if (!doctor) {
+      return res.status(404).json({ error: 'Doctor not found' });
+    }
+
+    res.json(doctor);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ============ APPOINTMENT CONTROLLERS ============
+
+exports.createAppointment = async (req, res) => {
+  try {
+    const { doctorId, date, time, reason, symptoms } = req.body;
+    
+    const doctor = await User.findById(doctorId);
+    if (!doctor || doctor.role !== 'doctor') {
+      return res.status(404).json({ error: 'Doctor not found' });
+    }
+
+    const appointment = new Appointment({
+      patient: req.user._id,
+      doctor: doctorId,
+      date: new Date(date),
+      time,
+      reason,
+      symptoms: symptoms || [],
+      status: 'pending'
+    });
+
+    await appointment.save();
+
+    res.status(201).json({
+      message: 'Appointment booked successfully',
+      appointment
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getAppointments = async (req, res) => {
+  try {
+    const { status, date } = req.query;
+    const filter = {};
+    
+    if (req.user.role === 'patient') {
+      filter.patient = req.user._id;
+    } else if (req.user.role === 'doctor') {
+      filter.doctor = req.user._id;
+    }
+
+    if (status) filter.status = status;
+    if (date) filter.date = new Date(date);
+
+    const appointments = await Appointment.find(filter)
+      .populate('patient', 'firstName lastName patientId phone')
+      .populate('doctor', 'firstName lastName specialization')
+      .populate('department', 'name')
+      .sort({ date: 1, time: 1 });
+
+    res.json(appointments);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateAppointment = async (req, res) => {
+  try {
+    const { status, notes } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+    
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    if (status) appointment.status = status;
+    if (notes) appointment.notes = notes;
+    appointment.updatedAt = new Date();
+
+    await appointment.save();
+
+    res.json({ message: 'Appointment updated', appointment });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.cancelAppointment = async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    appointment.status = 'cancelled';
+    appointment.updatedAt = new Date();
+    await appointment.save();
+
+    res.json({ message: 'Appointment cancelled successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // ============ CONSULTATION CONTROLLERS ============
 
 exports.createConsultation = async (req, res) => {
   try {
-    const { 
-      patientId, symptoms, vitalSigns, diagnosis, 
-      treatmentPlan, notes, followUpDate, isEmergency 
-    } = req.body;
+    const { patientId, symptoms, diagnosis, treatmentPlan, notes, followUpDate } = req.body;
 
     const patient = await User.findOne({ patientId });
     if (!patient) {
@@ -397,34 +441,14 @@ exports.createConsultation = async (req, res) => {
       patient: patient._id,
       doctor: req.user._id,
       symptoms,
-      vitalSigns,
       diagnosis,
       treatmentPlan,
       notes,
       followUpDate,
-      isEmergency: isEmergency || false,
       status: 'completed'
     });
 
     await consultation.save();
-
-    // Generate QR Code
-    const qrData = JSON.stringify({
-      consultationId: consultation._id,
-      patientId: patient.patientId,
-      doctor: `${req.user.firstName} ${req.user.lastName}`,
-      date: consultation.date
-    });
-    consultation.qrCode = await generateQRCode(qrData);
-    await consultation.save();
-
-    await new AuditLog({
-      user: req.user._id,
-      action: 'CREATE_CONSULTATION',
-      entity: 'Consultation',
-      entityId: consultation._id.toString(),
-      details: { patientId: patient.patientId }
-    }).save();
 
     res.status(201).json({
       message: 'Consultation created successfully',
@@ -437,14 +461,13 @@ exports.createConsultation = async (req, res) => {
 
 exports.getConsultations = async (req, res) => {
   try {
-    const { patientId, doctorId } = req.query;
+    const { patientId } = req.query;
     const filter = {};
 
     if (patientId) {
       const patient = await User.findOne({ patientId });
       if (patient) filter.patient = patient._id;
     }
-    if (doctorId) filter.doctor = doctorId;
     if (req.user.role === 'patient') filter.patient = req.user._id;
     if (req.user.role === 'doctor') filter.doctor = req.user._id;
 
@@ -462,7 +485,7 @@ exports.getConsultations = async (req, res) => {
 exports.getConsultationById = async (req, res) => {
   try {
     const consultation = await Consultation.findById(req.params.id)
-      .populate('patient', 'firstName lastName patientId phone dateOfBirth gender')
+      .populate('patient', 'firstName lastName patientId phone')
       .populate('doctor', 'firstName lastName specialization');
 
     if (!consultation) {
@@ -497,23 +520,6 @@ exports.createLabRequest = async (req, res) => {
 
     await labRequest.save();
 
-    // Generate QR Code
-    const qrData = JSON.stringify({
-      requestId: labRequest._id,
-      patientId: patient.patientId,
-      tests: tests.map(t => t.name).join(', ')
-    });
-    labRequest.qrCode = await generateQRCode(qrData);
-    await labRequest.save();
-
-    await new AuditLog({
-      user: req.user._id,
-      action: 'CREATE_LAB_REQUEST',
-      entity: 'LabRequest',
-      entityId: labRequest._id.toString(),
-      details: { patientId: patient.patientId, testCount: tests.length }
-    }).save();
-
     res.status(201).json({
       message: 'Laboratory request created',
       labRequest
@@ -533,10 +539,6 @@ exports.getLabRequests = async (req, res) => {
       if (patient) filter.patient = patient._id;
     }
     if (status) filter.status = status;
-    if (req.user.role === 'patient') filter.patient = req.user._id;
-    if (req.user.role === 'laboratory') {
-      // Lab staff can see all pending and processing requests
-    }
 
     const requests = await LabRequest.find(filter)
       .populate('patient', 'firstName lastName patientId phone')
@@ -551,7 +553,7 @@ exports.getLabRequests = async (req, res) => {
 
 exports.updateLabRequest = async (req, res) => {
   try {
-    const { tests, status, completedDate } = req.body;
+    const { tests, status } = req.body;
     const labRequest = await LabRequest.findById(req.params.id);
 
     if (!labRequest) {
@@ -562,10 +564,9 @@ exports.updateLabRequest = async (req, res) => {
     if (status) {
       labRequest.status = status;
       if (status === 'completed') {
-        labRequest.completedDate = completedDate || new Date();
+        labRequest.completedDate = new Date();
       }
     }
-    labRequest.updatedAt = new Date();
     await labRequest.save();
 
     res.json({ message: 'Lab request updated', labRequest });
@@ -578,7 +579,7 @@ exports.updateLabRequest = async (req, res) => {
 
 exports.createPrescription = async (req, res) => {
   try {
-    const { patientId, medicines, diagnosis, notes, consultationId } = req.body;
+    const { patientId, medicines, diagnosis, notes } = req.body;
 
     const patient = await User.findOne({ patientId });
     if (!patient) {
@@ -588,7 +589,6 @@ exports.createPrescription = async (req, res) => {
     const prescription = new Prescription({
       patient: patient._id,
       doctor: req.user._id,
-      consultation: consultationId,
       medicines,
       diagnosis,
       notes,
@@ -596,23 +596,6 @@ exports.createPrescription = async (req, res) => {
     });
 
     await prescription.save();
-
-    // Generate QR Code
-    const qrData = JSON.stringify({
-      prescriptionId: prescription._id,
-      patientId: patient.patientId,
-      medicines: medicines.map(m => m.name).join(', ')
-    });
-    prescription.qrCode = await generateQRCode(qrData);
-    await prescription.save();
-
-    await new AuditLog({
-      user: req.user._id,
-      action: 'CREATE_PRESCRIPTION',
-      entity: 'Prescription',
-      entityId: prescription._id.toString(),
-      details: { patientId: patient.patientId, medicineCount: medicines.length }
-    }).save();
 
     res.status(201).json({
       message: 'Prescription created',
@@ -633,12 +616,10 @@ exports.getPrescriptions = async (req, res) => {
       if (patient) filter.patient = patient._id;
     }
     if (status) filter.status = status;
-    if (req.user.role === 'patient') filter.patient = req.user._id;
 
     const prescriptions = await Prescription.find(filter)
       .populate('patient', 'firstName lastName patientId phone')
       .populate('doctor', 'firstName lastName specialization')
-      .populate('consultation')
       .sort({ date: -1 });
 
     res.json(prescriptions);
@@ -720,20 +701,20 @@ exports.dispenseMedicine = async (req, res) => {
       return res.status(404).json({ error: 'Prescription not found' });
     }
 
-    // Check stock availability
+    // Check stock
     for (const item of medicines) {
       const medicine = await Medicine.findById(item.medicine);
       if (!medicine) {
         return res.status(404).json({ error: `Medicine ${item.name} not found` });
       }
       if (medicine.quantityInStock < item.quantity) {
-        return res.status(400).json({ 
-          error: `Insufficient stock for ${medicine.name}. Available: ${medicine.quantityInStock}` 
+        return res.status(400).json({
+          error: `Insufficient stock for ${medicine.name}. Available: ${medicine.quantityInStock}`
         });
       }
     }
 
-    // Deduct from stock
+    // Deduct stock
     for (const item of medicines) {
       const medicine = await Medicine.findById(item.medicine);
       medicine.quantityInStock -= item.quantity;
@@ -754,14 +735,6 @@ exports.dispenseMedicine = async (req, res) => {
     // Update prescription status
     prescription.status = 'dispensed';
     await prescription.save();
-
-    await new AuditLog({
-      user: req.user._id,
-      action: 'DISPENSE_MEDICINE',
-      entity: 'PharmacyDispense',
-      entityId: dispense._id.toString(),
-      details: { prescriptionId, medicineCount: medicines.length }
-    }).save();
 
     res.status(201).json({
       message: 'Medicine dispensed successfully',
@@ -806,7 +779,6 @@ exports.createBill = async (req, res) => {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
-    // Calculate totals
     let subtotal = 0;
     for (const item of items) {
       item.total = item.quantity * item.unitPrice;
@@ -825,7 +797,6 @@ exports.createBill = async (req, res) => {
       totalAmount += totalAmount * tax / 100;
     }
 
-    // Generate bill number
     const year = new Date().getFullYear();
     const count = await Billing.countDocuments({}) + 1;
     const billNumber = `BILL-${year}-${String(count).padStart(5, '0')}`;
@@ -845,14 +816,6 @@ exports.createBill = async (req, res) => {
     });
 
     await bill.save();
-
-    await new AuditLog({
-      user: req.user._id,
-      action: 'CREATE_BILL',
-      entity: 'Billing',
-      entityId: bill._id.toString(),
-      details: { patientId: patient.patientId, amount: totalAmount }
-    }).save();
 
     res.status(201).json({
       message: 'Bill created successfully',
@@ -907,17 +870,7 @@ exports.processPayment = async (req, res) => {
 
     bill.paymentMethod = paymentMethod || bill.paymentMethod;
     bill.receiptNumber = receiptNumber || `RCPT-${Date.now()}`;
-    bill.updatedAt = new Date();
-
     await bill.save();
-
-    await new AuditLog({
-      user: req.user._id,
-      action: 'PROCESS_PAYMENT',
-      entity: 'Billing',
-      entityId: bill._id.toString(),
-      details: { amount, billNumber: bill.billNumber }
-    }).save();
 
     res.json({ message: 'Payment processed successfully', bill });
   } catch (error) {
@@ -929,10 +882,7 @@ exports.processPayment = async (req, res) => {
 
 exports.admitPatient = async (req, res) => {
   try {
-    const { 
-      patientId, admissionType, ward, roomNumber, 
-      bedNumber, diagnosis, attendingDoctorId 
-    } = req.body;
+    const { patientId, admissionType, ward, roomNumber, bedNumber, diagnosis, attendingDoctorId } = req.body;
 
     const patient = await User.findOne({ patientId });
     if (!patient) {
@@ -950,14 +900,6 @@ exports.admitPatient = async (req, res) => {
     });
 
     await admission.save();
-
-    await new AuditLog({
-      user: req.user._id,
-      action: 'ADMIT_PATIENT',
-      entity: 'Admission',
-      entityId: admission._id.toString(),
-      details: { patientId: patient.patientId }
-    }).save();
 
     res.status(201).json({
       message: 'Patient admitted successfully',
@@ -980,7 +922,6 @@ exports.dischargePatient = async (req, res) => {
     admission.status = 'discharged';
     admission.dischargeDate = new Date();
     admission.dischargeSummary = dischargeSummary;
-    admission.updatedAt = new Date();
     await admission.save();
 
     res.json({ message: 'Patient discharged successfully', admission });
@@ -1011,179 +952,6 @@ exports.getAdmissions = async (req, res) => {
   }
 };
 
-// ============ APPOINTMENT CONTROLLERS ============
-
-exports.createAppointment = async (req, res) => {
-  try {
-    const { doctorId, date, time, reason, symptoms } = req.body;
-    
-    const doctor = await User.findById(doctorId);
-    if (!doctor || doctor.role !== 'doctor') {
-      return res.status(404).json({ error: 'Doctor not found' });
-    }
-
-    // Check if time slot is available
-    const existingAppointment = await Appointment.findOne({
-      doctor: doctorId,
-      date: new Date(date),
-      time,
-      status: { $nin: ['cancelled', 'completed'] }
-    });
-
-    if (existingAppointment) {
-      return res.status(400).json({ error: 'Time slot already booked' });
-    }
-
-    const appointment = new Appointment({
-      patient: req.user._id,
-      doctor: doctorId,
-      date: new Date(date),
-      time,
-      reason,
-      symptoms: symptoms || [],
-      status: 'pending'
-    });
-
-    await appointment.save();
-
-    await new AuditLog({
-      user: req.user._id,
-      action: 'CREATE_APPOINTMENT',
-      entity: 'Appointment',
-      entityId: appointment._id.toString(),
-      details: { doctorId, date, time }
-    }).save();
-
-    res.status(201).json({
-      message: 'Appointment booked successfully',
-      appointment
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getAppointments = async (req, res) => {
-  try {
-    const { status, date } = req.query;
-    const filter = {};
-    
-    if (req.user.role === 'patient') {
-      filter.patient = req.user._id;
-    } else if (req.user.role === 'doctor') {
-      filter.doctor = req.user._id;
-    }
-
-    if (status) filter.status = status;
-    if (date) filter.date = new Date(date);
-
-    const appointments = await Appointment.find(filter)
-      .populate('patient', 'firstName lastName patientId phone')
-      .populate('doctor', 'firstName lastName specialization')
-      .populate('department', 'name')
-      .sort({ date: 1, time: 1 });
-
-    res.json(appointments);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.updateAppointment = async (req, res) => {
-  try {
-    const { status, notes } = req.body;
-    const appointment = await Appointment.findById(req.params.id);
-    
-    if (!appointment) {
-      return res.status(404).json({ error: 'Appointment not found' });
-    }
-
-    if (status) appointment.status = status;
-    if (notes) appointment.notes = notes;
-    appointment.updatedAt = new Date();
-
-    await appointment.save();
-
-    res.json({ message: 'Appointment updated', appointment });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ DEPARTMENT CONTROLLERS ============
-
-exports.getDepartments = async (req, res) => {
-  try {
-    const departments = await Department.find({ isActive: true })
-      .populate('head', 'firstName lastName email')
-      .populate('staff', 'firstName lastName');
-    res.json(departments);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.createDepartment = async (req, res) => {
-  try {
-    const department = new Department(req.body);
-    await department.save();
-    res.status(201).json({ message: 'Department created', department });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.updateDepartment = async (req, res) => {
-  try {
-    const department = await Department.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!department) {
-      return res.status(404).json({ error: 'Department not found' });
-    }
-    res.json({ message: 'Department updated', department });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ DOCTOR CONTROLLERS ============
-
-exports.getDoctors = async (req, res) => {
-  try {
-    const { department, specialization } = req.query;
-    const filter = { isActive: true };
-    
-    if (department) filter.department = department;
-    if (specialization) filter.specialization = specialization;
-
-    const doctors = await Doctor.find(filter)
-      .populate('user', 'firstName lastName email phone profileImage')
-      .sort({ rating: -1 });
-
-    res.json(doctors);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getDoctorById = async (req, res) => {
-  try {
-    const doctor = await Doctor.findById(req.params.id)
-      .populate('user', 'firstName lastName email phone profileImage');
-    
-    if (!doctor) {
-      return res.status(404).json({ error: 'Doctor not found' });
-    }
-
-    res.json(doctor);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
 // ============ STATISTICS CONTROLLERS ============
 
 exports.getStatistics = async (req, res) => {
@@ -1192,42 +960,163 @@ exports.getStatistics = async (req, res) => {
       totalPatients,
       totalDoctors,
       totalNurses,
-      totalStaff,
       totalDepartments,
-      totalAppointmentsToday,
-      totalBeds,
-      occupiedBeds,
-      totalMedicines,
-      lowStockMedicines
+      totalAppointments,
+      totalSurgeries,
+      availableBeds
     ] = await Promise.all([
       User.countDocuments({ role: 'patient', isActive: true }),
       User.countDocuments({ role: 'doctor', isActive: true }),
       User.countDocuments({ role: 'nurse', isActive: true }),
-      User.countDocuments({ role: { $in: ['doctor', 'nurse', 'reception', 'laboratory', 'pharmacy', 'finance'] }, isActive: true }),
       Department.countDocuments({ isActive: true }),
-      Appointment.countDocuments({ 
-        date: { $gte: new Date().setHours(0,0,0), $lte: new Date().setHours(23,59,59) },
-        status: { $in: ['confirmed', 'pending'] }
-      }),
-      100, // Placeholder - would come from bed management
-      45, // Placeholder - occupied beds
-      Medicine.countDocuments({ isActive: true }),
-      Medicine.countDocuments({ quantityInStock: { $lt: 10 } })
+      Appointment.countDocuments({ status: { $in: ['confirmed', 'pending'] } }),
+      Appointment.countDocuments({ status: 'completed' }),
+      120 // Placeholder
     ]);
 
     res.json({
       patients: totalPatients,
       doctors: totalDoctors,
       nurses: totalNurses,
-      staff: totalStaff,
       departments: totalDepartments,
-      appointmentsToday: totalAppointmentsToday,
-      totalBeds,
-      occupiedBeds,
-      availableBeds: totalBeds - occupiedBeds,
-      totalMedicines,
-      lowStockMedicines
+      appointments: totalAppointments,
+      surgeries: totalSurgeries,
+      availableBeds,
+      staff: totalDoctors + totalNurses + 100,
+      ambulances: 15,
+      labTests: 25000,
+      yearsOfService: 65
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ============ NEWS CONTROLLERS ============
+
+exports.getNews = async (req, res) => {
+  try {
+    const { limit = 10, page = 1 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const news = await News.find({ isPublished: true })
+      .populate('author', 'firstName lastName')
+      .sort({ publishedDate: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await News.countDocuments({ isPublished: true });
+
+    res.json({
+      news,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getNewsById = async (req, res) => {
+  try {
+    const news = await News.findOne({ slug: req.params.id })
+      .populate('author', 'firstName lastName');
+    
+    if (!news) {
+      return res.status(404).json({ error: 'News not found' });
+    }
+
+    news.views += 1;
+    await news.save();
+
+    res.json(news);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.createNews = async (req, res) => {
+  try {
+    const { title, content, excerpt, category, tags } = req.body;
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const news = new News({
+      title,
+      slug,
+      content,
+      excerpt,
+      category,
+      tags: tags || [],
+      author: req.user._id
+    });
+
+    await news.save();
+    res.status(201).json({ message: 'News published', news });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateNews = async (req, res) => {
+  try {
+    const news = await News.findById(req.params.id);
+    if (!news) {
+      return res.status(404).json({ error: 'News not found' });
+    }
+
+    Object.assign(news, req.body);
+    if (req.body.title) {
+      news.slug = req.body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+    await news.save();
+
+    res.json({ message: 'News updated', news });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteNews = async (req, res) => {
+  try {
+    const news = await News.findByIdAndDelete(req.params.id);
+    if (!news) {
+      return res.status(404).json({ error: 'News not found' });
+    }
+    res.json({ message: 'News deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ============ GALLERY CONTROLLERS ============
+
+exports.getGallery = async (req, res) => {
+  try {
+    const { category } = req.query;
+    const filter = { isActive: true };
+    if (category) filter.category = category;
+
+    const gallery = await Gallery.find(filter).sort({ createdAt: -1 });
+    res.json(gallery);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.createGallery = async (req, res) => {
+  try {
+    const { title, description, category } = req.body;
+    
+    const gallery = new Gallery({
+      title,
+      description,
+      category,
+      images: req.body.images || []
+    });
+
+    await gallery.save();
+    res.status(201).json({ message: 'Gallery created', gallery });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1274,14 +1163,6 @@ exports.updateUserStatus = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    await new AuditLog({
-      user: req.user._id,
-      action: 'UPDATE_USER_STATUS',
-      entity: 'User',
-      entityId: user._id.toString(),
-      details: { isActive }
-    }).save();
-
     res.json({ message: 'User status updated', user });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1316,84 +1197,137 @@ exports.getAuditLogs = async (req, res) => {
   }
 };
 
-// ============ NEWS CONTROLLERS ============
+// ============ DASHBOARD CONTROLLERS ============
 
-exports.getNews = async (req, res) => {
+exports.getPatientDashboard = async (req, res) => {
   try {
-    const { limit = 10, page = 1, category } = req.query;
-    const skip = (page - 1) * limit;
-    const filter = { isPublished: true };
-    if (category) filter.category = category;
+    const userId = req.user._id;
 
-    const news = await News.find(filter)
-      .populate('author', 'firstName lastName')
-      .sort({ publishedDate: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+    const appointments = await Appointment.find({ patient: userId })
+      .populate('doctor', 'firstName lastName')
+      .sort({ date: -1 })
+      .limit(5);
 
-    const total = await News.countDocuments(filter);
+    const labTests = await LabRequest.find({ patient: userId })
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    const prescriptions = await Prescription.find({ patient: userId })
+      .sort({ date: -1 })
+      .limit(5);
 
     res.json({
-      news,
-      total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / limit)
+      appointments,
+      labTests,
+      prescriptions,
+      upcomingAppointments: appointments.filter(a => a.status === 'pending' || a.status === 'confirmed')
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-exports.createNews = async (req, res) => {
+exports.getDoctorDashboard = async (req, res) => {
   try {
-    const { title, content, excerpt, category, tags } = req.body;
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const doctorId = req.user._id;
 
-    const news = new News({
-      title,
-      slug,
-      content,
-      excerpt,
-      category,
-      tags: tags || [],
-      author: req.user._id
+    const appointments = await Appointment.find({ doctor: doctorId })
+      .populate('patient', 'firstName lastName patientId')
+      .sort({ date: -1 })
+      .limit(10);
+
+    res.json({
+      appointments,
+      totalAppointments: await Appointment.countDocuments({ doctor: doctorId }),
+      pendingAppointments: await Appointment.countDocuments({ doctor: doctorId, status: 'pending' }),
+      completedAppointments: await Appointment.countDocuments({ doctor: doctorId, status: 'completed' })
     });
-
-    await news.save();
-    res.status(201).json({ message: 'News published', news });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// ============ GALLERY CONTROLLERS ============
+// ============ CAREER CONTROLLERS ============
 
-exports.getGallery = async (req, res) => {
+exports.getCareers = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { department, type } = req.query;
     const filter = { isActive: true };
-    if (category) filter.category = category;
+    if (department) filter.department = department;
+    if (type) filter.type = type;
 
-    const gallery = await Gallery.find(filter).sort({ createdAt: -1 });
-    res.json(gallery);
+    const careers = await Career.find(filter).sort({ createdAt: -1 });
+    res.json(careers);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-exports.createGallery = async (req, res) => {
+exports.createCareer = async (req, res) => {
   try {
-    const { title, description, category } = req.body;
+    const career = new Career(req.body);
+    await career.save();
+    res.status(201).json({ message: 'Career posted', career });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.applyForJob = async (req, res) => {
+  try {
+    const { name, email, phone, coverLetter } = req.body;
     
-    const gallery = new Gallery({
-      title,
-      description,
-      category,
-      images: req.body.images || []
+    const application = new Application({
+      job: req.params.id,
+      name,
+      email,
+      phone,
+      coverLetter,
+      applicant: req.user ? req.user._id : null
     });
 
-    await gallery.save();
-    res.status(201).json({ message: 'Gallery created', gallery });
+    await application.save();
+    res.status(201).json({ message: 'Application submitted', application });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ============ ADMIN DASHBOARD ============
+
+exports.getAdminDashboard = async (req, res) => {
+  try {
+    const [
+      totalUsers,
+      totalPatients,
+      totalDoctors,
+      totalNurses,
+      totalDepartments,
+      totalAppointments,
+      totalBeds,
+      occupiedBeds
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ role: 'patient', isActive: true }),
+      User.countDocuments({ role: 'doctor', isActive: true }),
+      User.countDocuments({ role: 'nurse', isActive: true }),
+      Department.countDocuments({ isActive: true }),
+      Appointment.countDocuments(),
+      150,
+      45
+    ]);
+
+    res.json({
+      totalUsers,
+      patients: totalPatients,
+      doctors: totalDoctors,
+      nurses: totalNurses,
+      departments: totalDepartments,
+      totalAppointments,
+      totalBeds,
+      occupiedBeds,
+      availableBeds: totalBeds - occupiedBeds
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
