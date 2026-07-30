@@ -1,14 +1,11 @@
 // ============================================
 // GIMBIE ADVENTIST GENERAL HOSPITAL
-// MIDDLEWARE - General Middleware Functions
+// MIDDLEWARE - Complete Production Ready
 // ============================================
 
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const compression = require('compression');
-const mongoSanitize = require('express-mongo-sanitize');
-const xss = require('xss-clean');
-const hpp = require('hpp');
 const cors = require('cors');
 const logger = require('./logger');
 const { AuditLog } = require('./models');
@@ -27,7 +24,6 @@ exports.limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip rate limiting for trusted IPs or roles
     if (req.user && ['admin', 'super-admin'].includes(req.user.role)) {
       return true;
     }
@@ -40,8 +36,8 @@ exports.limiter = rateLimit({
 // ============================================
 
 exports.strictLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 5, // 5 attempts
+  windowMs: 5 * 60 * 1000,
+  max: 5,
   message: {
     success: false,
     message: 'Too many login attempts, please try again after 5 minutes.',
@@ -58,12 +54,12 @@ exports.corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
       process.env.FRONTEND_URL || 'https://ghimbi-adventist-general-hospital.vercel.app',
-      process.env.FRONTEND_DEV_URL || 'http://localhost:3000',
+      'https://ghimbi-adventist-general-hospital.vercel.app',
       'http://localhost:3000',
       'http://localhost:5000',
+      'http://localhost:5173',
     ];
 
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
@@ -75,9 +71,9 @@ exports.corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-API-Key'],
   exposedHeaders: ['Content-Range', 'X-Total-Count'],
-  maxAge: 86400, // 24 hours
+  maxAge: 86400,
 };
 
 // ============================================
@@ -85,6 +81,7 @@ exports.corsOptions = {
 // ============================================
 
 exports.errorHandler = (err, req, res, next) => {
+  // Log error
   logger.error('Error:', {
     message: err.message,
     stack: err.stack,
@@ -133,6 +130,14 @@ exports.errorHandler = (err, req, res, next) => {
     });
   }
 
+  // Mongoose cast error
+  if (err.name === 'CastError') {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid ${err.path}: ${err.value}`,
+    });
+  }
+
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({
@@ -174,14 +179,35 @@ exports.notFound = (req, res) => {
 // ============================================
 
 exports.sanitize = (req, res, next) => {
-  // Sanitize request body
+  // Sanitize body
   if (req.body) {
     Object.keys(req.body).forEach(key => {
       if (typeof req.body[key] === 'string') {
         req.body[key] = req.body[key].trim();
+        // Remove potential XSS
+        req.body[key] = req.body[key].replace(/<[^>]*>/g, '');
       }
     });
   }
+
+  // Sanitize query
+  if (req.query) {
+    Object.keys(req.query).forEach(key => {
+      if (typeof req.query[key] === 'string') {
+        req.query[key] = req.query[key].trim();
+      }
+    });
+  }
+
+  // Sanitize params
+  if (req.params) {
+    Object.keys(req.params).forEach(key => {
+      if (typeof req.params[key] === 'string') {
+        req.params[key] = req.params[key].trim();
+      }
+    });
+  }
+
   next();
 };
 
@@ -190,12 +216,29 @@ exports.sanitize = (req, res, next) => {
 // ============================================
 
 exports.requestLogger = (req, res, next) => {
-  logger.info(`${req.method} ${req.url}`, {
-    ip: req.ip,
-    userAgent: req.headers['user-agent'],
-    userId: req.user ? req.user._id : 'anonymous',
-    role: req.user ? req.user.role : 'public',
+  const start = Date.now();
+  
+  // Log on finish
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const logData = {
+      method: req.method,
+      url: req.url,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      userId: req.user ? req.user._id : 'anonymous',
+      role: req.user ? req.user.role : 'public',
+    };
+    
+    if (res.statusCode >= 400) {
+      logger.warn('Request error:', logData);
+    } else {
+      logger.info('Request completed:', logData);
+    }
   });
+  
   next();
 };
 
@@ -210,6 +253,9 @@ exports.responseTimeTracker = (req, res, next) => {
     if (duration > 5000) {
       logger.warn(`Slow request: ${req.method} ${req.url} - ${duration}ms`);
     }
+    if (duration > 10000) {
+      logger.error(`Very slow request: ${req.method} ${req.url} - ${duration}ms`);
+    }
   });
   next();
 };
@@ -219,12 +265,12 @@ exports.responseTimeTracker = (req, res, next) => {
 // ============================================
 
 exports.securityHeaders = (req, res, next) => {
-  // Set security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   next();
 };
 
@@ -234,7 +280,7 @@ exports.securityHeaders = (req, res, next) => {
 
 exports.compress = compression({
   level: 6,
-  threshold: 1024, // Only compress responses > 1KB
+  threshold: 1024,
   filter: (req, res) => {
     if (req.headers['x-no-compression']) {
       return false;
@@ -244,7 +290,7 @@ exports.compress = compression({
 });
 
 // ============================================
-// HEALTH CHECK MIDDLEWARE
+// HEALTH CHECK
 // ============================================
 
 exports.healthCheck = (req, res) => {
@@ -255,9 +301,9 @@ exports.healthCheck = (req, res) => {
     memory: process.memoryUsage(),
     version: process.version,
     environment: process.env.NODE_ENV || 'development',
-    hospital: 'Gimbie Adventist General Hospital',
+    hospital: process.env.HOSPITAL_NAME || 'Gimbie Adventist General Hospital',
     services: {
-      database: 'connected',
+      database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
       server: 'running',
       websocket: 'active',
     },
@@ -273,7 +319,6 @@ let isMaintenanceMode = false;
 
 exports.maintenanceMode = (req, res, next) => {
   if (isMaintenanceMode) {
-    // Allow admin and super-admin during maintenance
     if (req.user && ['admin', 'super-admin'].includes(req.user.role)) {
       return next();
     }
@@ -286,7 +331,6 @@ exports.maintenanceMode = (req, res, next) => {
   next();
 };
 
-// Set maintenance mode
 exports.setMaintenanceMode = (mode) => {
   isMaintenanceMode = mode;
   logger.info(`Maintenance mode ${mode ? 'enabled' : 'disabled'}`);
@@ -316,7 +360,7 @@ exports.cacheControl = (duration) => {
 };
 
 // ============================================
-// NO CACHE (for dynamic content)
+// NO CACHE
 // ============================================
 
 exports.noCache = (req, res, next) => {
@@ -333,16 +377,64 @@ exports.noCache = (req, res, next) => {
 exports.csp = helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
+    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
     styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     imgSrc: ["'self'", "data:", "https:", "http:"],
     fontSrc: ["'self'", "https://fonts.gstatic.com"],
-    connectSrc: ["'self'", "https://api.openai.com", "https://maps.googleapis.com"],
+    connectSrc: ["'self'", "https://api.openai.com", "https://maps.googleapis.com", "https://ghimbi-adventist-general-hospital.onrender.com"],
     frameSrc: ["'self'"],
     objectSrc: ["'none'"],
     upgradeInsecureRequests: [],
   },
 });
+
+// ============================================
+// REQUEST VALIDATION
+// ============================================
+
+exports.validateRequest = (schema) => {
+  return (req, res, next) => {
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: error.details.map(d => d.message),
+      });
+    }
+    next();
+  };
+};
+
+// ============================================
+// IP WHITELIST
+// ============================================
+
+exports.ipWhitelist = (allowedIPs) => {
+  return (req, res, next) => {
+    const clientIP = req.ip || req.connection.remoteAddress;
+    if (allowedIPs.includes(clientIP) || allowedIPs.includes('*')) {
+      next();
+    } else {
+      logger.warn(`Blocked IP: ${clientIP}`);
+      res.status(403).json({
+        success: false,
+        message: 'Access denied from this IP address',
+      });
+    }
+  };
+};
+
+// ============================================
+// LOG REQUEST BODY (Development Only)
+// ============================================
+
+exports.logRequestBody = (req, res, next) => {
+  if (process.env.NODE_ENV === 'development') {
+    logger.debug('Request Body:', req.body);
+  }
+  next();
+};
 
 // ============================================
 // EXPORT ALL MIDDLEWARE
@@ -366,4 +458,7 @@ module.exports = {
   cacheControl: exports.cacheControl,
   noCache: exports.noCache,
   csp: exports.csp,
+  validateRequest: exports.validateRequest,
+  ipWhitelist: exports.ipWhitelist,
+  logRequestBody: exports.logRequestBody,
 };
