@@ -1,8 +1,8 @@
 // ============ API Configuration ============
-// Use the Render backend URL
+// Your Render backend URL
 const API_BASE_URL = 'https://ghimbi-adventist-general-hospital.onrender.com/api';
 
-// For local development, uncomment this:
+// For local development, uncomment this line and comment the one above
 // const API_BASE_URL = 'http://localhost:5000/api';
 
 const API = {
@@ -16,29 +16,46 @@ const API = {
         profile: `${API_BASE_URL}/auth/profile`,
         changePassword: `${API_BASE_URL}/auth/change-password`
     },
+    // Public Routes
+    departments: `${API_BASE_URL}/departments`,
+    doctors: `${API_BASE_URL}/doctors`,
+    statistics: `${API_BASE_URL}/statistics`,
+    news: `${API_BASE_URL}/news`,
+    gallery: `${API_BASE_URL}/gallery`,
     // Patient Routes
     patients: {
         register: `${API_BASE_URL}/patients/register`,
         search: `${API_BASE_URL}/patients/search`,
         get: (id) => `${API_BASE_URL}/patients/${id}`
     },
-    // Consultation Routes
-    consultations: {
-        create: `${API_BASE_URL}/consultations`,
-        getAll: `${API_BASE_URL}/consultations`,
-        get: (id) => `${API_BASE_URL}/consultations/${id}`
+    // Appointment Routes
+    appointments: {
+        create: `${API_BASE_URL}/appointments`,
+        getAll: `${API_BASE_URL}/appointments`,
+        update: (id) => `${API_BASE_URL}/appointments/${id}`
+    },
+    // Admin Routes
+    admin: {
+        users: `${API_BASE_URL}/admin/users`,
+        updateUserStatus: (id) => `${API_BASE_URL}/admin/users/${id}/status`,
+        auditLogs: `${API_BASE_URL}/admin/audit-logs`,
+        departments: `${API_BASE_URL}/admin/departments`,
+        news: `${API_BASE_URL}/admin/news`,
+        gallery: `${API_BASE_URL}/admin/gallery`,
+        statistics: `${API_BASE_URL}/admin/statistics`,
+        dashboard: `${API_BASE_URL}/admin/dashboard`
+    },
+    // Dashboard Routes
+    dashboard: {
+        patient: `${API_BASE_URL}/dashboard/patient`,
+        admin: `${API_BASE_URL}/admin/dashboard`,
+        doctor: `${API_BASE_URL}/dashboard/doctor`
     },
     // Laboratory Routes
     laboratory: {
         create: `${API_BASE_URL}/laboratory`,
         getAll: `${API_BASE_URL}/laboratory`,
         update: (id) => `${API_BASE_URL}/laboratory/${id}`
-    },
-    // Prescription Routes
-    prescriptions: {
-        create: `${API_BASE_URL}/prescriptions`,
-        getAll: `${API_BASE_URL}/prescriptions`,
-        get: (id) => `${API_BASE_URL}/prescriptions/${id}`
     },
     // Pharmacy Routes
     pharmacy: {
@@ -54,39 +71,29 @@ const API = {
         getAll: `${API_BASE_URL}/billing`,
         processPayment: (id) => `${API_BASE_URL}/billing/${id}/payment`
     },
-    // Admission Routes
+    // Admissions Routes
     admissions: {
         create: `${API_BASE_URL}/admissions`,
         getAll: `${API_BASE_URL}/admissions`,
         discharge: (id) => `${API_BASE_URL}/admissions/${id}/discharge`
     },
-    // Appointment Routes
-    appointments: {
-        create: `${API_BASE_URL}/appointments`,
-        getAll: `${API_BASE_URL}/appointments`,
-        update: (id) => `${API_BASE_URL}/appointments/${id}`
+    // Prescription Routes
+    prescriptions: {
+        create: `${API_BASE_URL}/prescriptions`,
+        getAll: `${API_BASE_URL}/prescriptions`,
+        get: (id) => `${API_BASE_URL}/prescriptions/${id}`
     },
-    // Public Routes
-    departments: `${API_BASE_URL}/departments`,
-    doctors: `${API_BASE_URL}/doctors`,
-    news: `${API_BASE_URL}/news`,
-    gallery: `${API_BASE_URL}/gallery`,
-    statistics: `${API_BASE_URL}/statistics`,
-    // Admin Routes
-    admin: {
-        users: `${API_BASE_URL}/admin/users`,
-        updateUserStatus: (id) => `${API_BASE_URL}/admin/users/${id}/status`,
-        auditLogs: `${API_BASE_URL}/admin/audit-logs`,
-        departments: `${API_BASE_URL}/admin/departments`,
-        news: `${API_BASE_URL}/admin/news`,
-        gallery: `${API_BASE_URL}/admin/gallery`,
-        statistics: `${API_BASE_URL}/admin/statistics`,
-        dashboard: `${API_BASE_URL}/admin/dashboard`
+    // Consultation Routes
+    consultations: {
+        create: `${API_BASE_URL}/consultations`,
+        getAll: `${API_BASE_URL}/consultations`,
+        get: (id) => `${API_BASE_URL}/consultations/${id}`
     },
-    // Dashboard Routes
-    dashboard: {
-        patient: `${API_BASE_URL}/dashboard/patient`,
-        admin: `${API_BASE_URL}/admin/dashboard`
+    // Careers Routes
+    careers: {
+        getAll: `${API_BASE_URL}/careers`,
+        create: `${API_BASE_URL}/careers`,
+        apply: (id) => `${API_BASE_URL}/careers/${id}/apply`
     }
 };
 
@@ -116,8 +123,16 @@ class ApiService {
         try {
             console.log('📡 API Request:', endpoint);
             const response = await fetch(endpoint, config);
+            
+            // Handle 404 - endpoint not found
+            if (response.status === 404) {
+                console.error('❌ Route not found:', endpoint);
+                throw new Error('The requested API endpoint was not found. Please check the URL.');
+            }
+
             const data = await response.json();
 
+            // Handle 401 - try to refresh token
             if (response.status === 401 && this.refreshToken) {
                 const refreshed = await this.refreshAccessToken();
                 if (refreshed) {
@@ -136,7 +151,13 @@ class ApiService {
 
             return data;
         } catch (error) {
-            console.error('❌ API Error:', error);
+            console.error('❌ API Error:', error.message);
+            
+            // Check if it's a connection error
+            if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
+                throw new Error('Cannot connect to the server. Please check if the backend is running.');
+            }
+            
             throw error;
         }
     }
@@ -179,32 +200,42 @@ class ApiService {
     }
 
     // ============ Auth Methods ============
-    async login(email, password) {
+    async login(identifier, password) {
         try {
+            console.log('🔑 Attempting login for:', identifier);
             const data = await this.request(API.auth.login, {
                 method: 'POST',
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email: identifier, password })
             });
             if (data.token) {
                 this.setToken(data.token);
                 this.setRefreshToken(data.refreshToken);
                 localStorage.setItem('user', JSON.stringify(data.user));
+                console.log('✅ Login successful');
             }
             return data;
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('❌ Login error:', error.message);
             throw error;
         }
     }
 
     async register(userData) {
         try {
-            return await this.request(API.auth.register, {
+            console.log('📝 Attempting registration for:', userData.email);
+            const data = await this.request(API.auth.register, {
                 method: 'POST',
                 body: JSON.stringify(userData)
             });
+            if (data.token) {
+                this.setToken(data.token);
+                this.setRefreshToken(data.refreshToken);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                console.log('✅ Registration successful');
+            }
+            return data;
         } catch (error) {
-            console.error('Register error:', error);
+            console.error('❌ Registration error:', error.message);
             throw error;
         }
     }
@@ -253,20 +284,96 @@ class ApiService {
         return this.request(API.patients.get(id));
     }
 
-    // ============ Consultation Methods ============
-    async createConsultation(data) {
-        return this.request(API.consultations.create, {
+    // ============ Public Methods ============
+    async getDepartments() {
+        return this.request(API.departments);
+    }
+
+    async getDoctors(params = '') {
+        return this.request(`${API.doctors}${params}`);
+    }
+
+    async getNews(params = '') {
+        return this.request(`${API.news}${params}`);
+    }
+
+    async getGallery(params = '') {
+        return this.request(`${API.gallery}${params}`);
+    }
+
+    async getStatistics() {
+        return this.request(API.statistics);
+    }
+
+    // ============ Appointment Methods ============
+    async createAppointment(data) {
+        return this.request(API.appointments.create, {
             method: 'POST',
             body: JSON.stringify(data)
         });
     }
 
-    async getConsultations(params = '') {
-        return this.request(`${API.consultations.getAll}${params}`);
+    async getAppointments(params = '') {
+        return this.request(`${API.appointments.getAll}${params}`);
     }
 
-    async getConsultation(id) {
-        return this.request(API.consultations.get(id));
+    async updateAppointment(id, data) {
+        return this.request(API.appointments.update(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    // ============ Admin Methods ============
+    async getUsers(params = '') {
+        return this.request(`${API.admin.users}${params}`);
+    }
+
+    async updateUserStatus(id, data) {
+        return this.request(API.admin.updateUserStatus(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getAuditLogs(params = '') {
+        return this.request(`${API.admin.auditLogs}${params}`);
+    }
+
+    async createDepartment(data) {
+        return this.request(API.admin.departments, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async updateDepartment(id, data) {
+        return this.request(`${API.admin.departments}/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async createNews(data) {
+        return this.request(API.admin.news, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async createGallery(data) {
+        return this.request(API.admin.gallery, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getAdminDashboard() {
+        return this.request(API.dashboard.admin);
+    }
+
+    async getPatientDashboard() {
+        return this.request(API.dashboard.patient);
     }
 
     // ============ Laboratory Methods ============
@@ -286,22 +393,6 @@ class ApiService {
             method: 'PUT',
             body: JSON.stringify(data)
         });
-    }
-
-    // ============ Prescription Methods ============
-    async createPrescription(data) {
-        return this.request(API.prescriptions.create, {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
-    }
-
-    async getPrescriptions(params = '') {
-        return this.request(`${API.prescriptions.getAll}${params}`);
-    }
-
-    async getPrescription(id) {
-        return this.request(API.prescriptions.get(id));
     }
 
     // ============ Pharmacy Methods ============
@@ -372,96 +463,55 @@ class ApiService {
         });
     }
 
-    // ============ Appointment Methods ============
-    async createAppointment(data) {
-        return this.request(API.appointments.create, {
+    // ============ Prescription Methods ============
+    async createPrescription(data) {
+        return this.request(API.prescriptions.create, {
             method: 'POST',
             body: JSON.stringify(data)
         });
     }
 
-    async getAppointments(params = '') {
-        return this.request(`${API.appointments.getAll}${params}`);
+    async getPrescriptions(params = '') {
+        return this.request(`${API.prescriptions.getAll}${params}`);
     }
 
-    async updateAppointment(id, data) {
-        return this.request(API.appointments.update(id), {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
+    async getPrescription(id) {
+        return this.request(API.prescriptions.get(id));
     }
 
-    // ============ Public Methods ============
-    async getDepartments() {
-        return this.request(API.departments);
-    }
-
-    async getDoctors(params = '') {
-        return this.request(`${API.doctors}${params}`);
-    }
-
-    async getNews(params = '') {
-        return this.request(`${API.news}${params}`);
-    }
-
-    async getGallery(params = '') {
-        return this.request(`${API.gallery}${params}`);
-    }
-
-    async getStatistics() {
-        return this.request(API.statistics);
-    }
-
-    // ============ Admin Methods ============
-    async getUsers(params = '') {
-        return this.request(`${API.admin.users}${params}`);
-    }
-
-    async updateUserStatus(id, data) {
-        return this.request(API.admin.updateUserStatus(id), {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
-    }
-
-    async getAuditLogs(params = '') {
-        return this.request(`${API.admin.auditLogs}${params}`);
-    }
-
-    async createDepartment(data) {
-        return this.request(API.admin.departments, {
+    // ============ Consultation Methods ============
+    async createConsultation(data) {
+        return this.request(API.consultations.create, {
             method: 'POST',
             body: JSON.stringify(data)
         });
     }
 
-    async updateDepartment(id, data) {
-        return this.request(`${API.admin.departments}/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
+    async getConsultations(params = '') {
+        return this.request(`${API.consultations.getAll}${params}`);
     }
 
-    async createNews(data) {
-        return this.request(API.admin.news, {
+    async getConsultation(id) {
+        return this.request(API.consultations.get(id));
+    }
+
+    // ============ Career Methods ============
+    async getCareers(params = '') {
+        return this.request(`${API.careers.getAll}${params}`);
+    }
+
+    async createCareer(data) {
+        return this.request(API.careers.create, {
             method: 'POST',
             body: JSON.stringify(data)
         });
     }
 
-    async createGallery(data) {
-        return this.request(API.admin.gallery, {
+    async applyForJob(id, data) {
+        return this.request(API.careers.apply(id), {
             method: 'POST',
             body: JSON.stringify(data)
         });
-    }
-
-    async getAdminDashboard() {
-        return this.request(API.dashboard.admin);
-    }
-
-    async getPatientDashboard() {
-        return this.request(API.dashboard.patient);
     }
 }
 
@@ -503,6 +553,7 @@ function isPatient() {
     return hasRole('patient');
 }
 
+// Make helper functions globally available
 window.getCurrentUser = getCurrentUser;
 window.isAuthenticated = isAuthenticated;
 window.getUserRole = getUserRole;
