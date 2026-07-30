@@ -1,36 +1,40 @@
 {
-  "name": "gimbie-hospital",
   "version": 2,
+  "name": "ghimbi-adventist-general-hospital",
   "builds": [
     {
-      "src": "**/*.html",
+      "src": "frontend/**/*.html",
       "use": "@vercel/static"
     },
     {
-      "src": "**/*.css",
+      "src": "frontend/**/*.js",
       "use": "@vercel/static"
     },
     {
-      "src": "**/*.js",
+      "src": "frontend/**/*.css",
       "use": "@vercel/static"
     },
     {
-      "src": "**/*.json",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "assets/**",
+      "src": "frontend/assets/**/*",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/",
-      "dest": "/index.html"
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "src": "/",
+      "dest": "/frontend/index.html"
+    },
+    {
+      "src": "/(.*)\\.(html|js|css|png|jpg|jpeg|gif|svg|ico|json|xml)",
+      "dest": "/frontend/$1.$2"
+    },
+    {
+      "src": "/(?!api/.*)",
+      "dest": "/frontend/index.html"
     }
   ],
   "headers": [
@@ -56,20 +60,7 @@
       ]
     },
     {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        },
-        {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        }
-      ]
-    },
-    {
-      "source": "/manifest.json",
+      "source": "/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -77,5 +68,8 @@
         }
       ]
     }
-  ]
+  ],
+  "env": {
+    "VITE_API_URL": "https://ghimbi-adventist-general-hospital-backend.onrender.com/api"
+  }
 }
