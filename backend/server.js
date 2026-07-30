@@ -1,118 +1,107 @@
+// ============================================
+// GIMBIE ADVENTIST GENERAL HOSPITAL
+// BACKEND SERVER - MAIN ENTRY POINT
+// ============================================
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const compression = require('compression');
 const morgan = require('morgan');
-const fileUpload = require('express-fileupload');
-const path = require('path');
+const http = require('http');
+const socketIO = require('socket.io');
 const connectDB = require('./db');
-const config = require('./config');
 const routes = require('./routes');
-const { errorHandler, limiter, logger } = require('./middleware');
+const { errorHandler } = require('./middleware');
+const logger = require('./logger');
 
+// Initialize Express
 const app = express();
-
-// Connect to MongoDB
-connectDB();
-
-// ============ CORS - FIX: Allow all origins ============
-app.use(cors({
-    origin: '*',  // Allow all origins for testing
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+const server = http.createServer(app);
+const io = socketIO(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'https://ghimbi-adventist-general-hospital.vercel.app',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
-    optionsSuccessStatus: 200
-}));
+  },
+});
 
-// Handle preflight requests
-app.options('*', cors());
-
-// Security middleware (with CORS fix)
+// ============================================
+// MIDDLEWARE
+// ============================================
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: false
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
 }));
 
-// Compression
-app.use(compression());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'https://ghimbi-adventist-general-hospital.vercel.app',
+  credentials: true,
+}));
 
-// Logging
-app.use(morgan('combined'));
-
-// Body parser
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// File upload
-app.use(fileUpload({
-    createParentPath: true,
-    limits: { fileSize: config.maxFileSize || 5242880 },
-    abortOnLimit: true,
-    responseOnLimit: 'File size exceeds limit'
-}));
+app.use(morgan('combined'));
 
 // Static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static('uploads'));
+app.use('/public', express.static('public'));
 
-// Rate limiting
-app.use('/api', limiter);
+// ============================================
+// DATABASE CONNECTION
+// ============================================
+connectDB();
 
-// Custom logger
-app.use(logger);
+// ============================================
+// SOCKET.IO SETUP
+// ============================================
+require('./socket')(io);
 
-// ============ HEALTH CHECK ============
-app.get('/health', (req, res) => {
-    res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: config.nodeEnv || 'development',
-        hospital: config.hospitalName || 'Gimbie Adventist General Hospital'
-    });
-});
-
-// ============ ROOT ============
-app.get('/', (req, res) => {
-    res.json({
-        message: 'Gimbie Adventist General Hospital API',
-        version: '2.0.0',
-        status: 'running',
-        endpoints: {
-            health: '/health',
-            api: '/api',
-            auth: '/api/auth',
-            departments: '/api/departments',
-            doctors: '/api/doctors',
-            patients: '/api/patients',
-            appointments: '/api/appointments'
-        }
-    });
-});
-
-// ============ API ROUTES ============
+// ============================================
+// ROUTES
+// ============================================
 app.use('/api', routes);
 
-// ============ 404 HANDLER ============
-app.use((req, res) => {
-    res.status(404).json({
-        error: 'Route not found',
-        path: req.originalUrl,
-        method: req.method
-    });
+// Health check
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: '1.0.0',
+    hospital: 'Gimbie Adventist General Hospital',
+  });
 });
 
-// ============ ERROR HANDLER ============
+// Root
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to Gimbie Adventist General Hospital API',
+    version: '1.0.0',
+    docs: '/api/docs',
+    health: '/health',
+  });
+});
+
+// ============================================
+// ERROR HANDLING
+// ============================================
 app.use(errorHandler);
 
-// ============ START SERVER ============
-const PORT = config.port || 10000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🏥 ${config.hospitalName || 'Gimbie Adventist General Hospital'}`);
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📡 Environment: ${config.nodeEnv || 'development'}`);
-    console.log(`🔗 API URL: http://localhost:${PORT}/api`);
-    console.log(`💚 Health check: http://localhost:${PORT}/health`);
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+  });
 });
 
-module.exports = app;
+// ============================================
+// START SERVER
+// ============================================
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  logger.info(`🚀 Server running on port ${PORT}`);
+  logger.info(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`🏥 Hospital: Gimbie Adventist General Hospital`);
+});
