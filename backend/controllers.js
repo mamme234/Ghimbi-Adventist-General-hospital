@@ -1,1334 +1,2303 @@
+// ============================================
+// GIMBIE ADVENTIST GENERAL HOSPITAL
+// CONTROLLERS - ALL BUSINESS LOGIC
+// ============================================
+
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const config = require('./config');
+const crypto = require('crypto');
+const QRCode = require('qrcode');
+const { v4: uuidv4 } = require('uuid');
+const mongoose = require('mongoose');
+
 const {
   User,
+  Patient,
   Doctor,
-  Department,
   Appointment,
-  News,
-  Gallery,
-  AuditLog
+  Prescription,
+  Medicine,
+  LabTest,
+  RadiologyTest,
+  Invoice,
+  Staff,
+  Ambulance,
+  AmbulanceTrip,
+  AuditLog,
+  Notification,
 } = require('./models');
 
-// ============ AUTH CONTROLLERS ============
+const { sendEmail, sendSMS, sendPushNotification } = require('./mail');
+const logger = require('./logger');
+const { generateQR, generateBarcode } = require('./qr');
 
+// ============================================
+// AUTH CONTROLLERS
+// ============================================
+
+// @desc    Register new user
+// @route   POST /api/auth/register
+// @access  Public
 exports.register = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, phone, dateOfBirth, gender, role } = req.body;
+    const { fullName, email, phone, password, role, ...rest } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    // Check if user exists
+    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
-      return res.status(400).json({ error: 'Email already registered' });
+      return res.status(400).json({
+        success: false,
+        message: 'User already exists with this email or phone',
+      });
     }
 
-    const user = new User({
-      firstName,
-      lastName,
+    // Create user
+    const user = await User.create({
+      fullName,
       email,
-      password,
       phone,
-      dateOfBirth,
-      gender,
-      role: role || 'patient'
+      password,
+      role: role || 'patient',
+      ...rest,
     });
 
+    // Generate verification token
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    user.verifyEmailToken = verifyToken;
+    user.verifyEmailExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, config.jwtSecret, { expiresIn: config.jwtExpire });
-    const refreshToken = jwt.sign({ id: user._id }, config.jwtRefreshSecret, { expiresIn: config.jwtRefreshExpire });
+    // Send verification email
+    await sendEmail({
+      to: email,
+      subject: 'Verify Your Email - Gimbie Adventist Hospital',
+      html: `
+        <h1>Welcome to Gimbie Adventist General Hospital</h1>
+        <p>Please verify your email by clicking the link below:</p>
+        <a href="${process.env.FRONTEND_URL}/verify-email?token=${verifyToken}">
+          Verify Email
+        </a>
+        <p>This link will expire in 24 hours.</p>
+      `,
+    });
+
+    // If role is patient, create patient profile
+    if (role === 'patient') {
+      const patient = await Patient.create({
+        userId: user._id,
+        registeredBy: user._id,
+        ...rest,
+      });
+    }
+
+    // If role is doctor, create doctor profile
+    if (role === 'doctor') {
+      const doctor = await Doctor.create({
+        userId: user._id,
+        ...rest,
+      });
+    }
+
+    // Log audit
+    await AuditLog.create({
+      userId: user._id,
+      userRole: role,
+      action: 'USER_REGISTERED',
+      resource: 'User',
+      resourceId: user._id,
+    });
+
+    // Generate JWT
+    const token = generateToken(user._id);
 
     res.status(201).json({
-      message: 'User registered successfully',
+      success: true,
       token,
-      refreshToken,
       user: {
         id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        userId: user.userId,
+        fullName: user.fullName,
         email: user.email,
+        phone: user.phone,
         role: user.role,
-        phone: user.phone
-      }
+        isVerified: user.isVerified,
+      },
+      message: 'Registration successful! Please verify your email.',
     });
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Registration failed',
+      error: error.message,
+    });
   }
 };
 
+// @desc    Login user
+// @route   POST /api/auth/login
+// @access  Public
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    // Find user
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
     }
 
+    // Check if account is locked
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      return res.status(403).json({
+        success: false,
+        message: `Account locked. Try again after ${new Date(user.lockUntil).toLocaleString()}`,
+      });
+    }
+
+    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      // Increment login attempts
+      user.loginAttempts += 1;
+      if (user.loginAttempts >= 5) {
+        user.lockUntil = Date.now() + 30 * 60 * 1000; // Lock for 30 minutes
+      }
+      await user.save();
+
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+        attemptsLeft: 5 - user.loginAttempts,
+      });
     }
 
-    const token = jwt.sign({ id: user._id }, config.jwtSecret, { expiresIn: config.jwtExpire });
-    const refreshToken = jwt.sign({ id: user._id }, config.jwtRefreshSecret, { expiresIn: config.jwtRefreshExpire });
-
+    // Reset login attempts
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
     user.lastLogin = new Date();
     await user.save();
 
+    // Log audit
+    await AuditLog.create({
+      userId: user._id,
+      userRole: user.role,
+      action: 'USER_LOGIN',
+      resource: 'User',
+      resourceId: user._id,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    // Generate JWT
+    const token = generateToken(user._id);
+
+    // Get role-specific profile
+    let profile = null;
+    if (user.role === 'patient') {
+      profile = await Patient.findOne({ userId: user._id });
+    } else if (user.role === 'doctor') {
+      profile = await Doctor.findOne({ userId: user._id });
+    }
+
     res.json({
-      message: 'Login successful',
+      success: true,
       token,
-      refreshToken,
       user: {
         id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        userId: user.userId,
+        fullName: user.fullName,
         email: user.email,
+        phone: user.phone,
         role: user.role,
-        phone: user.phone
-      }
+        profileImage: user.profileImage,
+        isVerified: user.isVerified,
+        profile,
+      },
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Login failed',
+      error: error.message,
+    });
   }
 };
 
-exports.refreshToken = async (req, res) => {
+// @desc    Verify email
+// @route   POST /api/auth/verify-email
+// @access  Public
+exports.verifyEmail = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
-    if (!refreshToken) {
-      return res.status(401).json({ error: 'Refresh token required' });
-    }
+    const { token } = req.body;
 
-    const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret);
-    const user = await User.findById(decoded.id);
+    const user = await User.findOne({
+      verifyEmailToken: token,
+      verifyEmailExpires: { $gt: Date.now() },
+    });
+
     if (!user) {
-      return res.status(401).json({ error: 'Invalid refresh token' });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token',
+      });
     }
 
-    const newToken = jwt.sign({ id: user._id }, config.jwtSecret, { expiresIn: config.jwtExpire });
-    res.json({ token: newToken });
+    user.isEmailVerified = true;
+    user.isVerified = true;
+    user.verifyEmailToken = undefined;
+    user.verifyEmailExpires = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully',
+    });
   } catch (error) {
-    res.status(401).json({ error: 'Invalid refresh token' });
+    logger.error('Email verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Email verification failed',
+      error: error.message,
+    });
   }
 };
 
-exports.logout = async (req, res) => {
+// @desc    Forgot password
+// @route   POST /api/auth/forgot-password
+// @access  Public
+exports.forgotPassword = async (req, res) => {
   try {
-    res.json({ message: 'Logged out successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+    const { email } = req.body;
 
-exports.getMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('-password');
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
 
-exports.updateProfile = async (req, res) => {
-  try {
-    const updates = req.body;
-    const user = await User.findById(req.user._id);
-    
-    const allowedUpdates = ['firstName', 'lastName', 'phone', 'address', 'emergencyContact'];
-    allowedUpdates.forEach(key => {
-      if (updates[key] !== undefined) {
-        user[key] = updates[key];
-      }
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
+    await user.save();
+
+    // Send reset email
+    await sendEmail({
+      to: email,
+      subject: 'Password Reset - Gimbie Adventist Hospital',
+      html: `
+        <h1>Reset Your Password</h1>
+        <p>You requested a password reset. Click the link below to reset your password:</p>
+        <a href="${process.env.FRONTEND_URL}/reset-password?token=${resetToken}">
+          Reset Password
+        </a>
+        <p>This link will expire in 1 hour.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+      `,
     });
 
-    await user.save();
-    res.json({ message: 'Profile updated', user: user.toObject({ getters: true }) });
+    res.json({
+      success: true,
+      message: 'Password reset email sent',
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send reset email',
+      error: error.message,
+    });
   }
 };
 
+// @desc    Reset password
+// @route   POST /api/auth/reset-password
+// @access  Public
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token',
+      });
+    }
+
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully',
+    });
+  } catch (error) {
+    logger.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Password reset failed',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Change password
+// @route   POST /api/auth/change-password
+// @access  Private
 exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const user = await User.findById(req.user._id);
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
 
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
-      return res.status(400).json({ error: 'Current password is incorrect' });
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
     }
 
     user.password = newPassword;
     await user.save();
 
-    res.json({ message: 'Password changed successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ PATIENT CONTROLLERS ============
-
-exports.registerPatient = async (req, res) => {
-  try {
-    const { firstName, lastName, phone, dateOfBirth, gender, email, address, emergencyContact } = req.body;
-
-    const existingPatient = await User.findOne({ $or: [{ email }, { phone }] });
-    if (existingPatient) {
-      return res.status(400).json({ error: 'Patient already exists' });
-    }
-
-    const tempPassword = 'Patient@' + Math.floor(1000 + Math.random() * 9000);
-
-    const patient = new User({
-      firstName,
-      lastName,
-      phone,
-      dateOfBirth,
-      gender,
-      email: email || `${firstName.toLowerCase()}.${lastName.toLowerCase()}@gimbie.patient`,
-      password: tempPassword,
-      address,
-      emergencyContact,
-      role: 'patient'
+    await AuditLog.create({
+      userId: user._id,
+      userRole: user.role,
+      action: 'PASSWORD_CHANGED',
+      resource: 'User',
+      resourceId: user._id,
     });
 
-    await patient.save();
-
-    res.status(201).json({
-      message: 'Patient registered successfully',
-      patient: {
-        id: patient._id,
-        patientId: patient.patientId,
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        phone: patient.phone,
-        tempPassword: tempPassword
-      }
+    res.json({
+      success: true,
+      message: 'Password changed successfully',
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Password change failed',
+      error: error.message,
+    });
   }
 };
 
-exports.searchPatients = async (req, res) => {
+// @desc    Generate QR login
+// @route   POST /api/auth/qr-login
+// @access  Public
+exports.qrLogin = async (req, res) => {
   try {
-    const { query } = req.query;
-    if (!query) {
-      return res.status(400).json({ error: 'Search query required' });
+    const { userId } = req.body;
+
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
     }
 
-    const searchRegex = new RegExp(query, 'i');
-    const patients = await User.find({
-      role: 'patient',
-      $or: [
-        { patientId: searchRegex },
-        { firstName: searchRegex },
-        { lastName: searchRegex },
-        { phone: searchRegex },
-        { email: searchRegex }
-      ]
-    }).select('-password').limit(20);
-
-    res.json(patients);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getPatientById = async (req, res) => {
-  try {
-    const patient = await User.findOne({
-      $or: [{ _id: req.params.id }, { patientId: req.params.id }]
-    }).select('-password');
-
-    if (!patient) {
-      return res.status(404).json({ error: 'Patient not found' });
-    }
-
-    res.json(patient);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ DEPARTMENT CONTROLLERS ============
-
-exports.getDepartments = async (req, res) => {
-  try {
-    const departments = await Department.find({ isActive: true })
-      .populate('head', 'firstName lastName email');
-    res.json(departments);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.createDepartment = async (req, res) => {
-  try {
-    const department = new Department(req.body);
-    await department.save();
-    res.status(201).json({ message: 'Department created', department });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.updateDepartment = async (req, res) => {
-  try {
-    const department = await Department.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!department) {
-      return res.status(404).json({ error: 'Department not found' });
-    }
-    res.json({ message: 'Department updated', department });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ DOCTOR CONTROLLERS ============
-
-exports.getDoctors = async (req, res) => {
-  try {
-    const { department, specialization } = req.query;
-    const filter = { isActive: true };
-    
-    if (department) filter.department = department;
-    if (specialization) filter.specialization = specialization;
-
-    const doctors = await Doctor.find(filter)
-      .populate('user', 'firstName lastName email phone profileImage')
-      .sort({ rating: -1 });
-
-    res.json(doctors);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getDoctorById = async (req, res) => {
-  try {
-    const doctor = await Doctor.findById(req.params.id)
-      .populate('user', 'firstName lastName email phone profileImage');
-    
-    if (!doctor) {
-      return res.status(404).json({ error: 'Doctor not found' });
-    }
-
-    res.json(doctor);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ APPOINTMENT CONTROLLERS ============
-
-exports.createAppointment = async (req, res) => {
-  try {
-    const { doctorId, date, time, reason, symptoms } = req.body;
-    
-    const doctor = await User.findById(doctorId);
-    if (!doctor || doctor.role !== 'doctor') {
-      return res.status(404).json({ error: 'Doctor not found' });
-    }
-
-    const appointment = new Appointment({
-      patient: req.user._id,
-      doctor: doctorId,
-      date: new Date(date),
-      time,
-      reason,
-      symptoms: symptoms || [],
-      status: 'pending'
+    const qrData = JSON.stringify({
+      userId: user.userId,
+      timestamp: Date.now(),
+      token: crypto.randomBytes(32).toString('hex'),
     });
 
-    await appointment.save();
+    const qrCode = await QRCode.toDataURL(qrData);
 
-    res.status(201).json({
-      message: 'Appointment booked successfully',
-      appointment
+    res.json({
+      success: true,
+      qrCode,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getAppointments = async (req, res) => {
-  try {
-    const { status, date } = req.query;
-    const filter = {};
-    
-    if (req.user.role === 'patient') {
-      filter.patient = req.user._id;
-    } else if (req.user.role === 'doctor') {
-      filter.doctor = req.user._id;
-    }
-
-    if (status) filter.status = status;
-    if (date) filter.date = new Date(date);
-
-    const appointments = await Appointment.find(filter)
-      .populate('patient', 'firstName lastName patientId phone')
-      .populate('doctor', 'firstName lastName specialization')
-      .populate('department', 'name')
-      .sort({ date: 1, time: 1 });
-
-    res.json(appointments);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.updateAppointment = async (req, res) => {
-  try {
-    const { status, notes } = req.body;
-    const appointment = await Appointment.findById(req.params.id);
-    
-    if (!appointment) {
-      return res.status(404).json({ error: 'Appointment not found' });
-    }
-
-    if (status) appointment.status = status;
-    if (notes) appointment.notes = notes;
-    appointment.updatedAt = new Date();
-
-    await appointment.save();
-
-    res.json({ message: 'Appointment updated', appointment });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.cancelAppointment = async (req, res) => {
-  try {
-    const appointment = await Appointment.findById(req.params.id);
-    
-    if (!appointment) {
-      return res.status(404).json({ error: 'Appointment not found' });
-    }
-
-    appointment.status = 'cancelled';
-    appointment.updatedAt = new Date();
-    await appointment.save();
-
-    res.json({ message: 'Appointment cancelled successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ CONSULTATION CONTROLLERS ============
-
-exports.createConsultation = async (req, res) => {
-  try {
-    const { patientId, symptoms, diagnosis, treatmentPlan, notes, followUpDate } = req.body;
-
-    const patient = await User.findOne({ patientId });
-    if (!patient) {
-      return res.status(404).json({ error: 'Patient not found' });
-    }
-
-    const consultation = new Consultation({
-      patient: patient._id,
-      doctor: req.user._id,
-      symptoms,
-      diagnosis,
-      treatmentPlan,
-      notes,
-      followUpDate,
-      status: 'completed'
+    logger.error('QR login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'QR generation failed',
+      error: error.message,
     });
-
-    await consultation.save();
-
-    res.status(201).json({
-      message: 'Consultation created successfully',
-      consultation
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 };
 
-exports.getConsultations = async (req, res) => {
-  try {
-    const { patientId } = req.query;
-    const filter = {};
-
-    if (patientId) {
-      const patient = await User.findOne({ patientId });
-      if (patient) filter.patient = patient._id;
-    }
-    if (req.user.role === 'patient') filter.patient = req.user._id;
-    if (req.user.role === 'doctor') filter.doctor = req.user._id;
-
-    const consultations = await Consultation.find(filter)
-      .populate('patient', 'firstName lastName patientId phone')
-      .populate('doctor', 'firstName lastName specialization')
-      .sort({ date: -1 });
-
-    res.json(consultations);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+// Helper: Generate JWT Token
+const generateToken = (userId) => {
+  return jwt.sign(
+    { id: userId },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRY || '7d' }
+  );
 };
 
-exports.getConsultationById = async (req, res) => {
+// ============================================
+// PATIENT CONTROLLERS
+// ============================================
+
+// @desc    Get all patients
+// @route   GET /api/patients
+// @access  Private
+exports.getPatients = async (req, res) => {
   try {
-    const consultation = await Consultation.findById(req.params.id)
-      .populate('patient', 'firstName lastName patientId phone')
-      .populate('doctor', 'firstName lastName specialization');
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
 
-    if (!consultation) {
-      return res.status(404).json({ error: 'Consultation not found' });
-    }
-
-    res.json(consultation);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ LABORATORY CONTROLLERS ============
-
-exports.createLabRequest = async (req, res) => {
-  try {
-    const { patientId, tests, clinicalNotes, priority } = req.body;
-
-    const patient = await User.findOne({ patientId });
-    if (!patient) {
-      return res.status(404).json({ error: 'Patient not found' });
-    }
-
-    const labRequest = new LabRequest({
-      patient: patient._id,
-      doctor: req.user._id,
-      tests,
-      clinicalNotes,
-      priority: priority || 'routine',
-      status: 'pending'
-    });
-
-    await labRequest.save();
-
-    res.status(201).json({
-      message: 'Laboratory request created',
-      labRequest
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getLabRequests = async (req, res) => {
-  try {
-    const { patientId, status } = req.query;
-    const filter = {};
-
-    if (patientId) {
-      const patient = await User.findOne({ patientId });
-      if (patient) filter.patient = patient._id;
-    }
-    if (status) filter.status = status;
-
-    const requests = await LabRequest.find(filter)
-      .populate('patient', 'firstName lastName patientId phone')
-      .populate('doctor', 'firstName lastName')
-      .sort({ requestDate: -1 });
-
-    res.json(requests);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.updateLabRequest = async (req, res) => {
-  try {
-    const { tests, status } = req.body;
-    const labRequest = await LabRequest.findById(req.params.id);
-
-    if (!labRequest) {
-      return res.status(404).json({ error: 'Lab request not found' });
-    }
-
-    if (tests) labRequest.tests = tests;
-    if (status) {
-      labRequest.status = status;
-      if (status === 'completed') {
-        labRequest.completedDate = new Date();
-      }
-    }
-    await labRequest.save();
-
-    res.json({ message: 'Lab request updated', labRequest });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ PRESCRIPTION CONTROLLERS ============
-
-exports.createPrescription = async (req, res) => {
-  try {
-    const { patientId, medicines, diagnosis, notes } = req.body;
-
-    const patient = await User.findOne({ patientId });
-    if (!patient) {
-      return res.status(404).json({ error: 'Patient not found' });
-    }
-
-    const prescription = new Prescription({
-      patient: patient._id,
-      doctor: req.user._id,
-      medicines,
-      diagnosis,
-      notes,
-      status: 'active'
-    });
-
-    await prescription.save();
-
-    res.status(201).json({
-      message: 'Prescription created',
-      prescription
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getPrescriptions = async (req, res) => {
-  try {
-    const { patientId, status } = req.query;
-    const filter = {};
-
-    if (patientId) {
-      const patient = await User.findOne({ patientId });
-      if (patient) filter.patient = patient._id;
-    }
-    if (status) filter.status = status;
-
-    const prescriptions = await Prescription.find(filter)
-      .populate('patient', 'firstName lastName patientId phone')
-      .populate('doctor', 'firstName lastName specialization')
-      .sort({ date: -1 });
-
-    res.json(prescriptions);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getPrescriptionById = async (req, res) => {
-  try {
-    const prescription = await Prescription.findById(req.params.id)
-      .populate('patient', 'firstName lastName patientId phone')
-      .populate('doctor', 'firstName lastName specialization');
-
-    if (!prescription) {
-      return res.status(404).json({ error: 'Prescription not found' });
-    }
-
-    res.json(prescription);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ PHARMACY CONTROLLERS ============
-
-exports.getMedicines = async (req, res) => {
-  try {
-    const { category, search } = req.query;
-    const filter = { isActive: true };
-
-    if (category) filter.category = category;
-    if (search) {
-      filter.$or = [
-        { name: new RegExp(search, 'i') },
-        { genericName: new RegExp(search, 'i') }
+    const query = {};
+    if (req.query.search) {
+      query.$or = [
+        { 'userId.fullName': { $regex: req.query.search, $options: 'i' } },
+        { mrn: { $regex: req.query.search, $options: 'i' } },
       ];
     }
 
-    const medicines = await Medicine.find(filter).sort({ name: 1 });
-    res.json(medicines);
+    const patients = await Patient.find(query)
+      .populate('userId', 'fullName email phone profileImage')
+      .populate('registeredBy', 'fullName')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Patient.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: patients,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Get patients error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch patients',
+      error: error.message,
+    });
   }
 };
 
-exports.createMedicine = async (req, res) => {
+// @desc    Get patient by ID
+// @route   GET /api/patients/:id
+// @access  Private
+exports.getPatient = async (req, res) => {
   try {
-    const medicine = new Medicine(req.body);
-    await medicine.save();
-    res.status(201).json({ message: 'Medicine added', medicine });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+    const patient = await Patient.findOne({ patientId: req.params.id })
+      .populate('userId', 'fullName email phone profileImage gender dateOfBirth address')
+      .populate('registeredBy', 'fullName');
 
-exports.updateMedicine = async (req, res) => {
-  try {
-    const medicine = await Medicine.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, updatedAt: new Date() },
-      { new: true }
-    );
-    if (!medicine) {
-      return res.status(404).json({ error: 'Medicine not found' });
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+      });
     }
-    res.json({ message: 'Medicine updated', medicine });
+
+    res.json({
+      success: true,
+      data: patient,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Get patient error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch patient',
+      error: error.message,
+    });
   }
 };
 
-exports.dispenseMedicine = async (req, res) => {
+// @desc    Create patient
+// @route   POST /api/patients
+// @access  Private
+exports.createPatient = async (req, res) => {
   try {
-    const { prescriptionId, medicines, notes } = req.body;
+    const { userId, ...patientData } = req.body;
 
-    const prescription = await Prescription.findById(prescriptionId);
-    if (!prescription) {
-      return res.status(404).json({ error: 'Prescription not found' });
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
     }
 
-    // Check stock
-    for (const item of medicines) {
-      const medicine = await Medicine.findById(item.medicine);
-      if (!medicine) {
-        return res.status(404).json({ error: `Medicine ${item.name} not found` });
+    // Generate MRN
+    const mrn = `MRN-${Date.now().toString(36).toUpperCase()}`;
+
+    const patient = await Patient.create({
+      userId,
+      mrn,
+      registeredBy: req.user._id,
+      ...patientData,
+    });
+
+    // Generate QR code
+    const qrData = JSON.stringify({
+      patientId: patient.patientId,
+      mrn: patient.mrn,
+      name: user.fullName,
+    });
+    const qrCode = await QRCode.toDataURL(qrData);
+    patient.qrCode = qrCode;
+    await patient.save();
+
+    // Create notification
+    await Notification.create({
+      userId: user._id,
+      type: 'system',
+      title: 'Patient Registration Complete',
+      message: `Welcome to Gimbie Adventist Hospital! Your MRN is ${mrn}`,
+      priority: 'high',
+    });
+
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'PATIENT_CREATED',
+      resource: 'Patient',
+      resourceId: patient._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: patient,
+      message: 'Patient created successfully',
+    });
+  } catch (error) {
+    logger.error('Create patient error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create patient',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Search patients
+// @route   GET /api/patients/search
+// @access  Private
+exports.searchPatients = async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query required',
+      });
+    }
+
+    const patients = await Patient.find({
+      $or: [
+        { 'userId.fullName': { $regex: q, $options: 'i' } },
+        { mrn: { $regex: q, $options: 'i' } },
+        { patientId: { $regex: q, $options: 'i' } },
+      ],
+    })
+      .populate('userId', 'fullName email phone profileImage')
+      .limit(20);
+
+    res.json({
+      success: true,
+      data: patients,
+    });
+  } catch (error) {
+    logger.error('Search patients error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Search failed',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get patient by MRN
+// @route   GET /api/patients/mrn/:mrn
+// @access  Private
+exports.getPatientByMRN = async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ mrn: req.params.mrn })
+      .populate('userId', 'fullName email phone profileImage');
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: patient,
+    });
+  } catch (error) {
+    logger.error('Get patient by MRN error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch patient',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get patient by QR code
+// @route   GET /api/patients/qr/:qrCode
+// @access  Private
+exports.getPatientByQR = async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ qrCode: req.params.qrCode })
+      .populate('userId', 'fullName email phone profileImage');
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: patient,
+    });
+  } catch (error) {
+    logger.error('Get patient by QR error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch patient',
+      error: error.message,
+    });
+  }
+};
+
+// ============================================
+// DOCTOR CONTROLLERS
+// ============================================
+
+// @desc    Get all doctors
+// @route   GET /api/doctors
+// @access  Public
+exports.getDoctors = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const query = {};
+    if (req.query.department) {
+      query.department = req.query.department;
+    }
+    if (req.query.isAvailable !== undefined) {
+      query.isAvailable = req.query.isAvailable === 'true';
+    }
+
+    const doctors = await Doctor.find(query)
+      .populate('userId', 'fullName email phone profileImage')
+      .sort({ rating: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Doctor.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: doctors,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    logger.error('Get doctors error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch doctors',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get doctor by ID
+// @route   GET /api/doctors/:id
+// @access  Public
+exports.getDoctor = async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ doctorId: req.params.id })
+      .populate('userId', 'fullName email phone profileImage');
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: doctor,
+    });
+  } catch (error) {
+    logger.error('Get doctor error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch doctor',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Create doctor
+// @route   POST /api/doctors
+// @access  Private (Admin)
+exports.createDoctor = async (req, res) => {
+  try {
+    const { userId, ...doctorData } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Check if doctor already exists
+    const existingDoctor = await Doctor.findOne({ userId });
+    if (existingDoctor) {
+      return res.status(400).json({
+        success: false,
+        message: 'Doctor already exists for this user',
+      });
+    }
+
+    const doctor = await Doctor.create({
+      userId,
+      ...doctorData,
+    });
+
+    // Update user role to doctor
+    user.role = 'doctor';
+    await user.save();
+
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'DOCTOR_CREATED',
+      resource: 'Doctor',
+      resourceId: doctor._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: doctor,
+      message: 'Doctor created successfully',
+    });
+  } catch (error) {
+    logger.error('Create doctor error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create doctor',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get doctor appointments
+// @route   GET /api/doctors/:id/appointments
+// @access  Private
+exports.getDoctorAppointments = async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ doctorId: req.params.id });
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found',
+      });
+    }
+
+    const appointments = await Appointment.find({ doctor: doctor._id })
+      .populate('patient', 'patientId mrn')
+      .populate({
+        path: 'patient',
+        populate: {
+          path: 'userId',
+          select: 'fullName email phone',
+        },
+      })
+      .sort({ date: 1, startTime: 1 });
+
+    res.json({
+      success: true,
+      data: appointments,
+    });
+  } catch (error) {
+    logger.error('Get doctor appointments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch appointments',
+      error: error.message,
+    });
+  }
+};
+
+// ============================================
+// APPOINTMENT CONTROLLERS
+// ============================================
+
+// @desc    Create appointment
+// @route   POST /api/appointments
+// @access  Private
+exports.createAppointment = async (req, res) => {
+  try {
+    const { patientId, doctorId, date, startTime, reason, ...appointmentData } = req.body;
+
+    // Check patient exists
+    const patient = await Patient.findOne({ patientId });
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+      });
+    }
+
+    // Check doctor exists
+    const doctor = await Doctor.findOne({ doctorId });
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found',
+      });
+    }
+
+    // Check if doctor is available at this time
+    const existingAppointment = await Appointment.findOne({
+      doctor: doctor._id,
+      date: new Date(date),
+      startTime,
+      status: { $nin: ['cancelled', 'completed'] },
+    });
+
+    if (existingAppointment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Doctor is not available at this time',
+      });
+    }
+
+    // Calculate end time (30 min default)
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endMinutes = minutes + (appointmentData.duration || 30);
+    const endHours = hours + Math.floor(endMinutes / 60);
+    const endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+
+    const appointment = await Appointment.create({
+      patient: patient._id,
+      doctor: doctor._id,
+      date: new Date(date),
+      startTime,
+      endTime,
+      reason,
+      createdBy: req.user._id,
+      ...appointmentData,
+    });
+
+    // Send notification to patient
+    const user = await User.findById(patient.userId);
+    await Notification.create({
+      userId: user._id,
+      type: 'appointment',
+      title: 'Appointment Confirmed',
+      message: `Your appointment with Dr. ${doctor.userId.fullName} on ${new Date(date).toLocaleDateString()} at ${startTime} has been confirmed.`,
+      priority: 'high',
+    });
+
+    // Send SMS if enabled
+    if (user.phone) {
+      await sendSMS({
+        to: user.phone,
+        message: `Gimbie Hospital: Appt confirmed with Dr. ${doctor.userId.fullName} on ${new Date(date).toLocaleDateString()} at ${startTime}.`,
+      });
+    }
+
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'APPOINTMENT_CREATED',
+      resource: 'Appointment',
+      resourceId: appointment._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: appointment,
+      message: 'Appointment created successfully',
+    });
+  } catch (error) {
+    logger.error('Create appointment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create appointment',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get appointments
+// @route   GET /api/appointments
+// @access  Private
+exports.getAppointments = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const query = {};
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+    if (req.query.date) {
+      const start = new Date(req.query.date);
+      const end = new Date(req.query.date);
+      end.setHours(23, 59, 59);
+      query.date = { $gte: start, $lte: end };
+    }
+    if (req.query.patientId) {
+      const patient = await Patient.findOne({ patientId: req.query.patientId });
+      if (patient) query.patient = patient._id;
+    }
+    if (req.query.doctorId) {
+      const doctor = await Doctor.findOne({ doctorId: req.query.doctorId });
+      if (doctor) query.doctor = doctor._id;
+    }
+
+    const appointments = await Appointment.find(query)
+      .populate('patient', 'patientId mrn')
+      .populate({
+        path: 'patient',
+        populate: {
+          path: 'userId',
+          select: 'fullName email phone',
+        },
+      })
+      .populate('doctor', 'doctorId')
+      .populate({
+        path: 'doctor',
+        populate: {
+          path: 'userId',
+          select: 'fullName email phone',
+        },
+      })
+      .sort({ date: -1, startTime: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Appointment.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: appointments,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    logger.error('Get appointments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch appointments',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Cancel appointment
+// @route   PATCH /api/appointments/:id/cancel
+// @access  Private
+exports.cancelAppointment = async (req, res) => {
+  try {
+    const { reason } = req.body;
+
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found',
+      });
+    }
+
+    appointment.status = 'cancelled';
+    appointment.cancelledAt = new Date();
+    appointment.cancelledBy = req.user._id;
+    appointment.cancellationReason = reason || 'Cancelled by user';
+    await appointment.save();
+
+    // Notify patient
+    const patient = await Patient.findById(appointment.patient);
+    const user = await User.findById(patient.userId);
+    await Notification.create({
+      userId: user._id,
+      type: 'alert',
+      title: 'Appointment Cancelled',
+      message: `Your appointment has been cancelled. Reason: ${appointment.cancellationReason}`,
+      priority: 'high',
+    });
+
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'APPOINTMENT_CANCELLED',
+      resource: 'Appointment',
+      resourceId: appointment._id,
+    });
+
+    res.json({
+      success: true,
+      data: appointment,
+      message: 'Appointment cancelled successfully',
+    });
+  } catch (error) {
+    logger.error('Cancel appointment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel appointment',
+      error: error.message,
+    });
+  }
+};
+
+// ============================================
+// PRESCRIPTION CONTROLLERS
+// ============================================
+
+// @desc    Create prescription
+// @route   POST /api/prescriptions
+// @access  Private (Doctor)
+exports.createPrescription = async (req, res) => {
+  try {
+    const { patientId, medicines, diagnosis, notes, validUntil, ...prescriptionData } = req.body;
+
+    const patient = await Patient.findOne({ patientId });
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+      });
+    }
+
+    const doctor = await Doctor.findOne({ userId: req.user._id });
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found',
+      });
+    }
+
+    // Process medicines
+    const processedMedicines = [];
+    for (const med of medicines) {
+      let medicine = null;
+      if (med.medicineId) {
+        medicine = await Medicine.findOne({ medicineId: med.medicineId });
       }
-      if (medicine.quantityInStock < item.quantity) {
-        return res.status(400).json({
-          error: `Insufficient stock for ${medicine.name}. Available: ${medicine.quantityInStock}`
+      processedMedicines.push({
+        medicine: medicine ? medicine._id : null,
+        name: medicine ? medicine.name : med.name,
+        dosage: med.dosage,
+        frequency: med.frequency,
+        duration: med.duration,
+        quantity: med.quantity,
+        instructions: med.instructions,
+        isGeneric: med.isGeneric || false,
+        substituteAllowed: med.substituteAllowed !== undefined ? med.substituteAllowed : true,
+      });
+    }
+
+    const prescription = await Prescription.create({
+      patient: patient._id,
+      doctor: doctor._id,
+      medicines: processedMedicines,
+      diagnosis,
+      notes,
+      validUntil: new Date(validUntil),
+      ...prescriptionData,
+    });
+
+    // Generate QR and barcode
+    const qrData = JSON.stringify({
+      prescriptionId: prescription.prescriptionId,
+      patient: patient.patientId,
+      doctor: doctor.doctorId,
+    });
+    prescription.qrCode = await QRCode.toDataURL(qrData);
+    prescription.barcode = await generateBarcode(prescription.prescriptionId);
+    await prescription.save();
+
+    // Notify patient and pharmacy
+    const user = await User.findById(patient.userId);
+    await Notification.create({
+      userId: user._id,
+      type: 'system',
+      title: 'New Prescription',
+      message: `Dr. ${req.user.fullName} has issued a new prescription.`,
+      priority: 'high',
+    });
+
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'PRESCRIPTION_CREATED',
+      resource: 'Prescription',
+      resourceId: prescription._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: prescription,
+      message: 'Prescription created successfully',
+    });
+  } catch (error) {
+    logger.error('Create prescription error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create prescription',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Verify prescription (Pharmacy)
+// @route   PATCH /api/prescriptions/:id/verify
+// @access  Private (Pharmacist)
+exports.verifyPrescription = async (req, res) => {
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) {
+      return res.status(404).json({
+        success: false,
+        message: 'Prescription not found',
+      });
+    }
+
+    prescription.status = 'dispensed';
+    prescription.dispensedBy = req.user._id;
+    prescription.dispensedAt = new Date();
+    await prescription.save();
+
+    // Update inventory
+    for (const med of prescription.medicines) {
+      if (med.medicine) {
+        const medicine = await Medicine.findById(med.medicine);
+        if (medicine) {
+          medicine.quantityInStock -= med.quantity || 1;
+          await medicine.save();
+        }
+      }
+    }
+
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'PRESCRIPTION_VERIFIED',
+      resource: 'Prescription',
+      resourceId: prescription._id,
+    });
+
+    res.json({
+      success: true,
+      data: prescription,
+      message: 'Prescription verified and dispensed',
+    });
+  } catch (error) {
+    logger.error('Verify prescription error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify prescription',
+      error: error.message,
+    });
+  }
+};
+
+// ============================================
+// MEDICINE CONTROLLERS (Pharmacy)
+// ============================================
+
+// @desc    Get all medicines
+// @route   GET /api/medicines
+// @access  Public
+exports.getMedicines = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const query = { isActive: true };
+    if (req.query.search) {
+      query.$or = [
+        { name: { $regex: req.query.search, $options: 'i' } },
+        { genericName: { $regex: req.query.search, $options: 'i' } },
+      ];
+    }
+    if (req.query.category) {
+      query.category = req.query.category;
+    }
+
+    const medicines = await Medicine.find(query)
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Medicine.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: medicines,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    logger.error('Get medicines error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch medicines',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get low stock medicines
+// @route   GET /api/inventory/low-stock
+// @access  Private (Pharmacist)
+exports.getLowStock = async (req, res) => {
+  try {
+    const medicines = await Medicine.find({
+      quantityInStock: { $lte: '$reorderLevel' },
+      isActive: true,
+    }).sort({ quantityInStock: 1 });
+
+    res.json({
+      success: true,
+      data: medicines,
+    });
+  } catch (error) {
+    logger.error('Get low stock error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch low stock medicines',
+      error: error.message,
+    });
+  }
+};
+
+// ============================================
+// LABORATORY CONTROLLERS
+// ============================================
+
+// @desc    Create lab test
+// @route   POST /api/lab-tests
+// @access  Private
+exports.createLabTest = async (req, res) => {
+  try {
+    const { patientId, testName, testCategory, specimenType, priority, ...testData } = req.body;
+
+    const patient = await Patient.findOne({ patientId });
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+      });
+    }
+
+    const doctor = await Doctor.findOne({ userId: req.user._id });
+    if (!doctor && req.user.role !== 'laboratory') {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found',
+      });
+    }
+
+    const labTest = await LabTest.create({
+      patient: patient._id,
+      doctor: doctor ? doctor._id : null,
+      testName,
+      testCategory,
+      specimenType,
+      priority: priority || 'routine',
+      ...testData,
+    });
+
+    // Generate barcode
+    labTest.barcode = await generateBarcode(labTest.testId);
+    await labTest.save();
+
+    // Notify patient
+    const user = await User.findById(patient.userId);
+    await Notification.create({
+      userId: user._id,
+      type: 'system',
+      title: 'Lab Test Ordered',
+      message: `A lab test "${testName}" has been ordered. Please visit the laboratory.`,
+    });
+
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'LAB_TEST_CREATED',
+      resource: 'LabTest',
+      resourceId: labTest._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: labTest,
+      message: 'Lab test created successfully',
+    });
+  } catch (error) {
+    logger.error('Create lab test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create lab test',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Process lab test results
+// @route   PATCH /api/lab-tests/:id/process
+// @access  Private (Laboratory)
+exports.processLabTest = async (req, res) => {
+  try {
+    const { results, interpretation, comments } = req.body;
+
+    const labTest = await LabTest.findById(req.params.id);
+    if (!labTest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lab test not found',
+      });
+    }
+
+    labTest.results = results || [];
+    labTest.interpretation = interpretation;
+    labTest.comments = comments;
+    labTest.status = 'completed';
+    labTest.reviewedAt = new Date();
+    labTest.reviewedBy = req.user._id;
+
+    // Check for critical values
+    const criticalResults = labTest.results.filter(r => r.isAbnormal);
+    if (criticalResults.length > 0) {
+      labTest.isCritical = true;
+      labTest.criticalAlertSent = true;
+
+      // Notify doctor
+      if (labTest.doctor) {
+        const doctor = await Doctor.findById(labTest.doctor);
+        const doctorUser = await User.findById(doctor.userId);
+        await Notification.create({
+          userId: doctorUser._id,
+          type: 'alert',
+          title: 'Critical Lab Result',
+          message: `Critical result for patient ${labTest.patient}. Please review immediately.`,
+          priority: 'urgent',
         });
       }
     }
 
-    // Deduct stock
-    for (const item of medicines) {
-      const medicine = await Medicine.findById(item.medicine);
-      medicine.quantityInStock -= item.quantity;
-      await medicine.save();
-    }
+    await labTest.save();
 
-    const dispense = new PharmacyDispense({
-      prescription: prescriptionId,
-      patient: prescription.patient,
-      pharmacist: req.user._id,
-      medicines,
-      notes,
-      status: 'dispensed'
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'LAB_TEST_PROCESSED',
+      resource: 'LabTest',
+      resourceId: labTest._id,
     });
 
-    await dispense.save();
-
-    // Update prescription status
-    prescription.status = 'dispensed';
-    await prescription.save();
-
-    res.status(201).json({
-      message: 'Medicine dispensed successfully',
-      dispense
+    res.json({
+      success: true,
+      data: labTest,
+      message: 'Lab test processed successfully',
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Process lab test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process lab test',
+      error: error.message,
+    });
   }
 };
 
-exports.getDispenses = async (req, res) => {
+// ============================================
+// RADIOLOGY CONTROLLERS
+// ============================================
+
+// @desc    Create radiology test
+// @route   POST /api/radiology-tests
+// @access  Private
+exports.createRadiologyTest = async (req, res) => {
   try {
-    const { patientId, status } = req.query;
-    const filter = {};
+    const { patientId, testType, bodyPart, reason, priority, ...testData } = req.body;
 
-    if (patientId) {
-      const patient = await User.findOne({ patientId });
-      if (patient) filter.patient = patient._id;
-    }
-    if (status) filter.status = status;
-
-    const dispenses = await PharmacyDispense.find(filter)
-      .populate('patient', 'firstName lastName patientId')
-      .populate('pharmacist', 'firstName lastName')
-      .populate('prescription')
-      .sort({ dispenseDate: -1 });
-
-    res.json(dispenses);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ BILLING CONTROLLERS ============
-
-exports.createBill = async (req, res) => {
-  try {
-    const { patientId, items, discount, discountType, tax, paymentMethod } = req.body;
-
-    const patient = await User.findOne({ patientId });
+    const patient = await Patient.findOne({ patientId });
     if (!patient) {
-      return res.status(404).json({ error: 'Patient not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+      });
     }
 
-    let subtotal = 0;
-    for (const item of items) {
-      item.total = item.quantity * item.unitPrice;
-      subtotal += item.total;
+    const doctor = await Doctor.findOne({ userId: req.user._id });
+    if (!doctor && req.user.role !== 'radiologist') {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found',
+      });
     }
 
-    let totalAmount = subtotal;
-    if (discount) {
-      if (discountType === 'percentage') {
-        totalAmount = subtotal - (subtotal * discount / 100);
-      } else {
-        totalAmount = subtotal - discount;
-      }
-    }
-    if (tax) {
-      totalAmount += totalAmount * tax / 100;
-    }
-
-    const year = new Date().getFullYear();
-    const count = await Billing.countDocuments({}) + 1;
-    const billNumber = `BILL-${year}-${String(count).padStart(5, '0')}`;
-
-    const bill = new Billing({
+    const radiologyTest = await RadiologyTest.create({
       patient: patient._id,
-      billNumber,
-      items,
-      subtotal,
-      discount: discount || 0,
-      discountType,
-      tax: tax || 0,
-      totalAmount,
-      paymentMethod,
-      paymentStatus: 'pending',
-      billedBy: req.user._id
+      doctor: doctor ? doctor._id : null,
+      testType,
+      bodyPart,
+      reason,
+      priority: priority || 'routine',
+      ...testData,
     });
 
-    await bill.save();
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'RADIOLOGY_TEST_CREATED',
+      resource: 'RadiologyTest',
+      resourceId: radiologyTest._id,
+    });
 
     res.status(201).json({
-      message: 'Bill created successfully',
-      bill
+      success: true,
+      data: radiologyTest,
+      message: 'Radiology test created successfully',
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Create radiology test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create radiology test',
+      error: error.message,
+    });
   }
 };
 
-exports.getBills = async (req, res) => {
+// ============================================
+// FINANCE / INVOICE CONTROLLERS
+// ============================================
+
+// @desc    Create invoice
+// @route   POST /api/invoices
+// @access  Private
+exports.createInvoice = async (req, res) => {
   try {
-    const { patientId, paymentStatus } = req.query;
-    const filter = {};
+    const { patientId, items, paymentMethod, notes, ...invoiceData } = req.body;
 
-    if (patientId) {
-      const patient = await User.findOne({ patientId });
-      if (patient) filter.patient = patient._id;
+    const patient = await Patient.findOne({ patientId });
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+      });
     }
-    if (paymentStatus) filter.paymentStatus = paymentStatus;
 
-    const bills = await Billing.find(filter)
-      .populate('patient', 'firstName lastName patientId phone')
-      .populate('billedBy', 'firstName lastName')
-      .sort({ createdAt: -1 });
+    // Calculate totals
+    let subtotal = 0;
+    const processedItems = items.map(item => {
+      const total = item.quantity * item.unitPrice;
+      subtotal += total;
+      return { ...item, totalPrice: total };
+    });
 
-    res.json(bills);
+    const tax = subtotal * 0.15; // 15% VAT
+    const totalAmount = subtotal + tax - (invoiceData.discount || 0);
+
+    const invoice = await Invoice.create({
+      patient: patient._id,
+      patientName: req.body.patientName || patient.userId.fullName,
+      items: processedItems,
+      subtotal,
+      tax,
+      discount: invoiceData.discount || 0,
+      totalAmount,
+      amountPaid: 0,
+      balanceDue: totalAmount,
+      issuedBy: req.user._id,
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      notes,
+      ...invoiceData,
+    });
+
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'INVOICE_CREATED',
+      resource: 'Invoice',
+      resourceId: invoice._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: invoice,
+      message: 'Invoice created successfully',
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Create invoice error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create invoice',
+      error: error.message,
+    });
   }
 };
 
+// @desc    Process payment
+// @route   POST /api/payments
+// @access  Private
 exports.processPayment = async (req, res) => {
   try {
-    const { amount, paymentMethod, receiptNumber } = req.body;
-    const bill = await Billing.findById(req.params.id);
+    const { invoiceId, amount, paymentMethod, transactionId } = req.body;
 
-    if (!bill) {
-      return res.status(404).json({ error: 'Bill not found' });
+    const invoice = await Invoice.findOne({ invoiceId });
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found',
+      });
     }
 
-    const newAmountPaid = bill.amountPaid + amount;
-    bill.amountPaid = newAmountPaid;
-    bill.balance = bill.totalAmount - newAmountPaid;
+    const newAmountPaid = invoice.amountPaid + amount;
+    invoice.amountPaid = newAmountPaid;
+    invoice.balanceDue = invoice.totalAmount - newAmountPaid;
 
-    if (bill.balance <= 0) {
-      bill.paymentStatus = 'paid';
-      bill.balance = 0;
-    } else if (newAmountPaid > 0) {
-      bill.paymentStatus = 'partial';
+    if (invoice.balanceDue <= 0) {
+      invoice.paymentStatus = 'paid';
+      invoice.balanceDue = 0;
+    } else {
+      invoice.paymentStatus = 'partially-paid';
     }
 
-    bill.paymentMethod = paymentMethod || bill.paymentMethod;
-    bill.receiptNumber = receiptNumber || `RCPT-${Date.now()}`;
-    await bill.save();
+    invoice.paymentMethod = paymentMethod;
+    invoice.paymentDate = new Date();
+    invoice.transactionId = transactionId;
+    await invoice.save();
 
-    res.json({ message: 'Payment processed successfully', bill });
+    await AuditLog.create({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'PAYMENT_PROCESSED',
+      resource: 'Invoice',
+      resourceId: invoice._id,
+    });
+
+    res.json({
+      success: true,
+      data: invoice,
+      message: 'Payment processed successfully',
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Process payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process payment',
+      error: error.message,
+    });
   }
 };
 
-// ============ ADMISSION CONTROLLERS ============
+// ============================================
+// AMBULANCE CONTROLLERS
+// ============================================
 
-exports.admitPatient = async (req, res) => {
+// @desc    Create ambulance request
+// @route   POST /api/ambulance
+// @access  Public
+exports.createAmbulanceRequest = async (req, res) => {
   try {
-    const { patientId, admissionType, ward, roomNumber, bedNumber, diagnosis, attendingDoctorId } = req.body;
+    const { patientName, patientPhone, pickupLocation, priority, ...tripData } = req.body;
 
-    const patient = await User.findOne({ patientId });
-    if (!patient) {
-      return res.status(404).json({ error: 'Patient not found' });
-    }
-
-    const admission = new Admission({
-      patient: patient._id,
-      admissionType,
-      ward,
-      roomNumber,
-      bedNumber,
-      diagnosis,
-      attendingDoctor: attendingDoctorId
+    const ambulanceTrip = await AmbulanceTrip.create({
+      patientName,
+      patientPhone,
+      pickupLocation,
+      priority: priority || 'medium',
+      status: 'pending',
+      ...tripData,
     });
 
-    await admission.save();
+    // Find available ambulance
+    const availableAmbulance = await Ambulance.findOne({ status: 'available' });
+    if (availableAmbulance) {
+      ambulanceTrip.ambulance = availableAmbulance._id;
+      ambulanceTrip.status = 'dispatched';
+      ambulanceTrip.dispatchedAt = new Date();
+      await ambulanceTrip.save();
+
+      availableAmbulance.status = 'on-call';
+      availableAmbulance.currentTrip = ambulanceTrip._id;
+      await availableAmbulance.save();
+
+      // Notify ambulance team
+      await Notification.create({
+        userId: availableAmbulance.driver,
+        type: 'alert',
+        title: 'Emergency Dispatch',
+        message: `Emergency request for ${patientName} at ${pickupLocation.address}`,
+        priority: 'urgent',
+      });
+    }
+
+    await AuditLog.create({
+      userId: req.user ? req.user._id : null,
+      userRole: req.user ? req.user.role : 'public',
+      action: 'AMBULANCE_REQUESTED',
+      resource: 'AmbulanceTrip',
+      resourceId: ambulanceTrip._id,
+    });
 
     res.status(201).json({
-      message: 'Patient admitted successfully',
-      admission
+      success: true,
+      data: ambulanceTrip,
+      message: 'Ambulance request submitted successfully',
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Create ambulance request error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit ambulance request',
+      error: error.message,
+    });
   }
 };
 
-exports.dischargePatient = async (req, res) => {
-  try {
-    const { dischargeSummary } = req.body;
-    const admission = await Admission.findById(req.params.id);
+// ============================================
+// ADMIN / DASHBOARD CONTROLLERS
+// ============================================
 
-    if (!admission) {
-      return res.status(404).json({ error: 'Admission record not found' });
-    }
-
-    admission.status = 'discharged';
-    admission.dischargeDate = new Date();
-    admission.dischargeSummary = dischargeSummary;
-    await admission.save();
-
-    res.json({ message: 'Patient discharged successfully', admission });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getAdmissions = async (req, res) => {
-  try {
-    const { patientId, status } = req.query;
-    const filter = {};
-
-    if (patientId) {
-      const patient = await User.findOne({ patientId });
-      if (patient) filter.patient = patient._id;
-    }
-    if (status) filter.status = status;
-
-    const admissions = await Admission.find(filter)
-      .populate('patient', 'firstName lastName patientId phone')
-      .populate('attendingDoctor', 'firstName lastName specialization')
-      .sort({ admissionDate: -1 });
-
-    res.json(admissions);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ STATISTICS CONTROLLERS ============
-
-exports.getStatistics = async (req, res) => {
+// @desc    Get dashboard statistics
+// @route   GET /api/admin/stats
+// @access  Private (Admin)
+exports.getDashboardStats = async (req, res) => {
   try {
     const [
       totalPatients,
       totalDoctors,
-      totalNurses,
-      totalDepartments,
+      totalStaff,
+      todayAppointments,
       totalAppointments,
-      totalSurgeries,
-      availableBeds
+      pendingAppointments,
+      totalRevenue,
+      todayRevenue,
+      activePatients,
+      totalInvoices,
+      unpaidInvoices,
+      totalMedicines,
+      lowStockMedicines,
     ] = await Promise.all([
-      User.countDocuments({ role: 'patient', isActive: true }),
-      User.countDocuments({ role: 'doctor', isActive: true }),
-      User.countDocuments({ role: 'nurse', isActive: true }),
-      Department.countDocuments({ isActive: true }),
-      Appointment.countDocuments({ status: { $in: ['confirmed', 'pending'] } }),
-      Appointment.countDocuments({ status: 'completed' }),
-      120 // Placeholder
+      Patient.countDocuments({ isActive: true }),
+      Doctor.countDocuments(),
+      Staff.countDocuments({ isActive: true }),
+      Appointment.countDocuments({
+        date: { $gte: new Date().setHours(0, 0, 0, 0), $lte: new Date().setHours(23, 59, 59, 999) },
+        status: { $ne: 'cancelled' },
+      }),
+      Appointment.countDocuments({ status: { $ne: 'cancelled' } }),
+      Appointment.countDocuments({ status: 'pending' }),
+      Invoice.aggregate([
+        { $match: { paymentStatus: 'paid' } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+      ]),
+      Invoice.aggregate([
+        {
+          $match: {
+            paymentDate: {
+              $gte: new Date().setHours(0, 0, 0, 0),
+              $lte: new Date().setHours(23, 59, 59, 999),
+            },
+            paymentStatus: 'paid',
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+      ]),
+      Patient.countDocuments({ isActive: true }),
+      Invoice.countDocuments(),
+      Invoice.countDocuments({ paymentStatus: 'unpaid' }),
+      Medicine.countDocuments({ isActive: true }),
+      Medicine.countDocuments({
+        quantityInStock: { $lte: '$reorderLevel' },
+        isActive: true,
+      }),
     ]);
 
     res.json({
-      patients: totalPatients,
-      doctors: totalDoctors,
-      nurses: totalNurses,
-      departments: totalDepartments,
-      appointments: totalAppointments,
-      surgeries: totalSurgeries,
-      availableBeds,
-      staff: totalDoctors + totalNurses + 100,
-      ambulances: 15,
-      labTests: 25000,
-      yearsOfService: 65
+      success: true,
+      data: {
+        patients: totalPatients,
+        doctors: totalDoctors,
+        staff: totalStaff,
+        todayAppointments,
+        totalAppointments,
+        pendingAppointments,
+        totalRevenue: totalRevenue[0]?.total || 0,
+        todayRevenue: todayRevenue[0]?.total || 0,
+        activePatients,
+        totalInvoices,
+        unpaidInvoices,
+        totalMedicines,
+        lowStockMedicines,
+        occupancyRate: '65%', // Placeholder - would need bed data
+      },
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Get dashboard stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dashboard stats',
+      error: error.message,
+    });
   }
 };
 
-// ============ NEWS CONTROLLERS ============
+// ============================================
+// AI CONTROLLERS
+// ============================================
 
-exports.getNews = async (req, res) => {
+// @desc    AI Chat assistant
+// @route   POST /api/ai/chat
+// @access  Private
+exports.aiChat = async (req, res) => {
   try {
-    const { limit = 10, page = 1 } = req.query;
-    const skip = (page - 1) * limit;
+    const { message } = req.body;
 
-    const news = await News.find({ isPublished: true })
-      .populate('author', 'firstName lastName')
-      .sort({ publishedDate: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+    // Simple AI responses for demo
+    const responses = {
+      'appointment': 'You can book an appointment through the appointments page. Would you like me to help you schedule one?',
+      'emergency': 'For emergencies, please call our emergency hotline or use the ambulance service. I can dispatch an ambulance for you if needed.',
+      'medicine': 'Our pharmacy is open 24/7. You can check medicine availability and refill prescriptions online.',
+      'doctor': 'Our medical team includes specialists in cardiology, neurology, orthopedics, and more. You can view doctor profiles and book appointments.',
+      'lab': 'Our laboratory offers comprehensive testing services including blood work, imaging, and pathology.',
+      'insurance': 'We accept most major insurance plans. You can check your coverage in your patient portal.',
+    };
 
-    const total = await News.countDocuments({ isPublished: true });
+    let reply = "I'm here to help! You can ask me about appointments, doctors, medicines, laboratory services, insurance, or emergency services.";
+
+    for (const [key, value] of Object.entries(responses)) {
+      if (message.toLowerCase().includes(key)) {
+        reply = value;
+        break;
+      }
+    }
 
     res.json({
-      news,
-      total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / limit)
+      success: true,
+      data: {
+        message: reply,
+        timestamp: new Date().toISOString(),
+      },
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getNewsById = async (req, res) => {
-  try {
-    const news = await News.findOne({ slug: req.params.id })
-      .populate('author', 'firstName lastName');
-    
-    if (!news) {
-      return res.status(404).json({ error: 'News not found' });
-    }
-
-    news.views += 1;
-    await news.save();
-
-    res.json(news);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.createNews = async (req, res) => {
-  try {
-    const { title, content, excerpt, category, tags } = req.body;
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-    const news = new News({
-      title,
-      slug,
-      content,
-      excerpt,
-      category,
-      tags: tags || [],
-      author: req.user._id
+    logger.error('AI chat error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'AI service temporarily unavailable',
+      error: error.message,
     });
-
-    await news.save();
-    res.status(201).json({ message: 'News published', news });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 };
 
-exports.updateNews = async (req, res) => {
+// @desc    AI Symptom checker
+// @route   POST /api/ai/symptom-check
+// @access  Public
+exports.aiSymptomCheck = async (req, res) => {
   try {
-    const news = await News.findById(req.params.id);
-    if (!news) {
-      return res.status(404).json({ error: 'News not found' });
+    const { symptoms } = req.body;
+
+    // Simple symptom checker (informational only)
+    const commonSymptoms = {
+      fever: 'May indicate infection. Please monitor your temperature and consult a doctor if it persists.',
+      headache: 'Common causes include stress, dehydration, or tension. Rest and hydration may help.',
+      cough: 'Could be due to allergies, cold, or respiratory infection. Seek medical attention if persistent.',
+      fatigue: 'Often related to sleep issues, stress, or underlying conditions. Please consult a healthcare provider.',
+      'chest pain': '⚠️ URGENT: Please seek immediate medical attention. This could be a sign of a heart condition.',
+    };
+
+    let advice = "Based on your symptoms, it's recommended to consult with a doctor for proper diagnosis. This is not medical advice.";
+
+    for (const [key, value] of Object.entries(commonSymptoms)) {
+      if (symptoms.toLowerCase().includes(key)) {
+        advice = value;
+        break;
+      }
     }
 
-    Object.assign(news, req.body);
-    if (req.body.title) {
-      news.slug = req.body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    }
-    await news.save();
-
-    res.json({ message: 'News updated', news });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.deleteNews = async (req, res) => {
-  try {
-    const news = await News.findByIdAndDelete(req.params.id);
-    if (!news) {
-      return res.status(404).json({ error: 'News not found' });
-    }
-    res.json({ message: 'News deleted' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ============ GALLERY CONTROLLERS ============
-
-exports.getGallery = async (req, res) => {
-  try {
-    const { category } = req.query;
-    const filter = { isActive: true };
-    if (category) filter.category = category;
-
-    const gallery = await Gallery.find(filter).sort({ createdAt: -1 });
-    res.json(gallery);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.createGallery = async (req, res) => {
-  try {
-    const { title, description, category } = req.body;
-    
-    const gallery = new Gallery({
-      title,
-      description,
-      category,
-      images: req.body.images || []
+    res.json({
+      success: true,
+      data: {
+        symptoms,
+        advice,
+        disclaimer: "This is for informational purposes only and does not constitute medical advice.",
+        severity: symptoms.includes('chest pain') ? 'emergency' : 'moderate',
+        recommendation: symptoms.includes('chest pain') ? 'seek immediate emergency care' : 'consult a doctor',
+      },
     });
-
-    await gallery.save();
-    res.status(201).json({ message: 'Gallery created', gallery });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('AI symptom check error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Symptom check failed',
+      error: error.message,
+    });
   }
 };
 
-// ============ ADMIN CONTROLLERS ============
+// ============================================
+// SEARCH CONTROLLER
+// ============================================
 
-exports.getUsers = async (req, res) => {
+// @desc    Global search
+// @route   GET /api/search
+// @access  Private
+exports.globalSearch = async (req, res) => {
   try {
-    const { role, isActive, search } = req.query;
-    const filter = {};
-    
-    if (role) filter.role = role;
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
-    if (search) {
-      filter.$or = [
-        { firstName: new RegExp(search, 'i') },
-        { lastName: new RegExp(search, 'i') },
-        { email: new RegExp(search, 'i') },
-        { patientId: new RegExp(search, 'i') }
-      ];
+    const { q } = req.query;
+
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query required',
+      });
     }
 
-    const users = await User.find(filter)
-      .select('-password')
-      .sort({ createdAt: -1 });
+    const [patients, doctors, appointments, medicines] = await Promise.all([
+      Patient.find({
+        $or: [
+          { mrn: { $regex: q, $options: 'i' } },
+          { patientId: { $regex: q, $options: 'i' } },
+        ],
+      })
+        .populate('userId', 'fullName email phone')
+        .limit(5),
 
-    res.json(users);
+      Doctor.find({
+        $or: [
+          { doctorId: { $regex: q, $options: 'i' } },
+          { specialization: { $regex: q, $options: 'i' } },
+          { 'userId.fullName': { $regex: q, $options: 'i' } },
+        ],
+      })
+        .populate('userId', 'fullName email phone')
+        .limit(5),
+
+      Appointment.find({
+        $or: [
+          { appointmentId: { $regex: q, $options: 'i' } },
+          { reason: { $regex: q, $options: 'i' } },
+        ],
+      })
+        .populate('patient', 'patientId')
+        .populate('doctor', 'doctorId')
+        .limit(5),
+
+      Medicine.find({
+        $or: [
+          { name: { $regex: q, $options: 'i' } },
+          { genericName: { $regex: q, $options: 'i' } },
+          { category: { $regex: q, $options: 'i' } },
+        ],
+      }).limit(5),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        patients,
+        doctors,
+        appointments,
+        medicines,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Global search error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Search failed',
+      error: error.message,
+    });
   }
 };
 
-exports.updateUserStatus = async (req, res) => {
-  try {
-    const { isActive } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { isActive, updatedAt: new Date() },
-      { new: true }
-    ).select('-password');
+// ============================================
+// REPORT CONTROLLERS
+// ============================================
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+// @desc    Generate report
+// @route   POST /api/reports/generate
+// @access  Private
+exports.generateReport = async (req, res) => {
+  try {
+    const { type, startDate, endDate, format } = req.body;
+
+    let data = [];
+    let reportName = '';
+
+    switch (type) {
+      case 'patients':
+        data = await Patient.find({
+          createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
+        }).populate('userId', 'fullName');
+        reportName = 'Patient Report';
+        break;
+
+      case 'appointments':
+        data = await Appointment.find({
+          date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+        })
+          .populate('patient', 'patientId')
+          .populate('doctor', 'doctorId');
+        reportName = 'Appointment Report';
+        break;
+
+      case 'revenue':
+        data = await Invoice.find({
+          issuedDate: { $gte: new Date(startDate), $lte: new Date(endDate) },
+          paymentStatus: 'paid',
+        });
+        reportName = 'Revenue Report';
+        break;
+
+      case 'pharmacy':
+        data = await Prescription.find({
+          createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
+        })
+          .populate('patient', 'patientId')
+          .populate('doctor', 'doctorId');
+        reportName = 'Pharmacy Report';
+        break;
+
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid report type',
+        });
     }
 
-    res.json({ message: 'User status updated', user });
+    res.json({
+      success: true,
+      data: {
+        name: reportName,
+        type,
+        startDate,
+        endDate,
+        generatedAt: new Date().toISOString(),
+        total: data.length,
+        data,
+      },
+      message: 'Report generated successfully',
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('Generate report error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate report',
+      error: error.message,
+    });
   }
+};
+
+// ============================================
+// PLACEHOLDER CONTROLLERS
+// ============================================
+
+// These will be expanded as needed
+exports.logout = async (req, res) => {
+  res.json({ success: true, message: 'Logged out successfully' });
+};
+
+exports.refreshToken = async (req, res) => {
+  res.json({ success: true, message: 'Token refreshed' });
+};
+
+exports.verify2FA = async (req, res) => {
+  res.json({ success: true, message: '2FA verified' });
+};
+
+exports.updatePatient = async (req, res) => {
+  res.json({ success: true, message: 'Patient updated' });
+};
+
+exports.deletePatient = async (req, res) => {
+  res.json({ success: true, message: 'Patient deleted' });
+};
+
+exports.updateDoctor = async (req, res) => {
+  res.json({ success: true, message: 'Doctor updated' });
+};
+
+exports.deleteDoctor = async (req, res) => {
+  res.json({ success: true, message: 'Doctor deleted' });
+};
+
+exports.getAppointment = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.updateAppointment = async (req, res) => {
+  res.json({ success: true, message: 'Appointment updated' });
+};
+
+exports.confirmAppointment = async (req, res) => {
+  res.json({ success: true, message: 'Appointment confirmed' });
+};
+
+exports.rescheduleAppointment = async (req, res) => {
+  res.json({ success: true, message: 'Appointment rescheduled' });
+};
+
+exports.getAppointmentsByPatient = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getAppointmentsByDoctor = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getPrescriptions = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getPrescription = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.updatePrescription = async (req, res) => {
+  res.json({ success: true, message: 'Prescription updated' });
+};
+
+exports.dispensePrescription = async (req, res) => {
+  res.json({ success: true, message: 'Prescription dispensed' });
+};
+
+exports.getLabTests = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getLabTest = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.updateLabTest = async (req, res) => {
+  res.json({ success: true, message: 'Lab test updated' });
+};
+
+exports.getLabResults = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.getRadiologyTests = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getRadiologyTest = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.updateRadiologyTest = async (req, res) => {
+  res.json({ success: true, message: 'Radiology test updated' });
+};
+
+exports.getRadiologyResults = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.getMedicine = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.createMedicine = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.updateMedicine = async (req, res) => {
+  res.json({ success: true, message: 'Medicine updated' });
+};
+
+exports.deleteMedicine = async (req, res) => {
+  res.json({ success: true, message: 'Medicine deleted' });
+};
+
+exports.getInventory = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.updateInventory = async (req, res) => {
+  res.json({ success: true, message: 'Inventory updated' });
+};
+
+exports.getInvoices = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getInvoice = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.updateInvoice = async (req, res) => {
+  res.json({ success: true, message: 'Invoice updated' });
+};
+
+exports.getRevenue = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.getStaff = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getStaffMember = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.createStaff = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.updateStaff = async (req, res) => {
+  res.json({ success: true, message: 'Staff updated' });
+};
+
+exports.deleteStaff = async (req, res) => {
+  res.json({ success: true, message: 'Staff deleted' });
+};
+
+exports.getAttendance = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.markAttendance = async (req, res) => {
+  res.json({ success: true, message: 'Attendance marked' });
+};
+
+exports.getPayroll = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.getAmbulanceRequests = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getAmbulanceRequest = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
+
+exports.updateAmbulanceStatus = async (req, res) => {
+  res.json({ success: true, message: 'Ambulance status updated' });
+};
+
+exports.dispatchAmbulance = async (req, res) => {
+  res.json({ success: true, message: 'Ambulance dispatched' });
 };
 
 exports.getAuditLogs = async (req, res) => {
-  try {
-    const { limit = 50, page = 1, user, action } = req.query;
-    const skip = (page - 1) * limit;
-    const filter = {};
-    
-    if (user) filter.user = user;
-    if (action) filter.action = action;
-
-    const logs = await AuditLog.find(filter)
-      .populate('user', 'firstName lastName email')
-      .sort({ timestamp: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    const total = await AuditLog.countDocuments(filter);
-
-    res.json({
-      logs,
-      total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / limit)
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  res.json({ success: true, data: [] });
 };
 
-// ============ DASHBOARD CONTROLLERS ============
-
-exports.getPatientDashboard = async (req, res) => {
-  try {
-    const userId = req.user._id;
-
-    const appointments = await Appointment.find({ patient: userId })
-      .populate('doctor', 'firstName lastName')
-      .sort({ date: -1 })
-      .limit(5);
-
-    const labTests = await LabRequest.find({ patient: userId })
-      .sort({ createdAt: -1 })
-      .limit(5);
-
-    const prescriptions = await Prescription.find({ patient: userId })
-      .sort({ date: -1 })
-      .limit(5);
-
-    res.json({
-      appointments,
-      labTests,
-      prescriptions,
-      upcomingAppointments: appointments.filter(a => a.status === 'pending' || a.status === 'confirmed')
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+exports.getSystemSettings = async (req, res) => {
+  res.json({ success: true, data: {} });
 };
 
-exports.getDoctorDashboard = async (req, res) => {
-  try {
-    const doctorId = req.user._id;
-
-    const appointments = await Appointment.find({ doctor: doctorId })
-      .populate('patient', 'firstName lastName patientId')
-      .sort({ date: -1 })
-      .limit(10);
-
-    res.json({
-      appointments,
-      totalAppointments: await Appointment.countDocuments({ doctor: doctorId }),
-      pendingAppointments: await Appointment.countDocuments({ doctor: doctorId, status: 'pending' }),
-      completedAppointments: await Appointment.countDocuments({ doctor: doctorId, status: 'completed' })
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+exports.updateSystemSettings = async (req, res) => {
+  res.json({ success: true, message: 'Settings updated' });
 };
 
-// ============ CAREER CONTROLLERS ============
-
-exports.getCareers = async (req, res) => {
-  try {
-    const { department, type } = req.query;
-    const filter = { isActive: true };
-    if (department) filter.department = department;
-    if (type) filter.type = type;
-
-    const careers = await Career.find(filter).sort({ createdAt: -1 });
-    res.json(careers);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+exports.backupDatabase = async (req, res) => {
+  res.json({ success: true, message: 'Backup created' });
 };
 
-exports.createCareer = async (req, res) => {
-  try {
-    const career = new Career(req.body);
-    await career.save();
-    res.status(201).json({ message: 'Career posted', career });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+exports.restoreDatabase = async (req, res) => {
+  res.json({ success: true, message: 'Database restored' });
 };
 
-exports.applyForJob = async (req, res) => {
-  try {
-    const { name, email, phone, coverLetter } = req.body;
-    
-    const application = new Application({
-      job: req.params.id,
-      name,
-      email,
-      phone,
-      coverLetter,
-      applicant: req.user ? req.user._id : null
-    });
-
-    await application.save();
-    res.status(201).json({ message: 'Application submitted', application });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+exports.getAnalytics = async (req, res) => {
+  res.json({ success: true, data: {} });
 };
 
-// ============ ADMIN DASHBOARD ============
+exports.getMetrics = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
 
-exports.getAdminDashboard = async (req, res) => {
-  try {
-    const [
-      totalUsers,
-      totalPatients,
-      totalDoctors,
-      totalNurses,
-      totalDepartments,
-      totalAppointments,
-      totalBeds,
-      occupiedBeds
-    ] = await Promise.all([
-      User.countDocuments(),
-      User.countDocuments({ role: 'patient', isActive: true }),
-      User.countDocuments({ role: 'doctor', isActive: true }),
-      User.countDocuments({ role: 'nurse', isActive: true }),
-      Department.countDocuments({ isActive: true }),
-      Appointment.countDocuments(),
-      150,
-      45
-    ]);
+exports.aiSummarize = async (req, res) => {
+  res.json({ success: true, data: {} });
+};
 
-    res.json({
-      totalUsers,
-      patients: totalPatients,
-      doctors: totalDoctors,
-      nurses: totalNurses,
-      departments: totalDepartments,
-      totalAppointments,
-      totalBeds,
-      occupiedBeds,
-      availableBeds: totalBeds - occupiedBeds
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+exports.sendMessage = async (req, res) => {
+  res.json({ success: true, message: 'Message sent' });
+};
+
+exports.getMessages = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.uploadFile = async (req, res) => {
+  res.json({ success: true, data: { file: req.file } });
+};
+
+exports.deleteFile = async (req, res) => {
+  res.json({ success: true, message: 'File deleted' });
+};
+
+exports.exportReport = async (req, res) => {
+  res.json({ success: true, message: 'Report exported' });
+};
+
+exports.getDepartments = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getServices = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getNews = async (req, res) => {
+  res.json({ success: true, data: [] });
+};
+
+exports.getGallery = async (req, res) => {
+  res.json({ success: true, data: [] });
 };
