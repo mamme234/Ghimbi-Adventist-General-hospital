@@ -94,6 +94,41 @@ class AuthManager {
                 `;
             }
         }
+
+        // Update Get Started section
+        const loginBtn = document.querySelector('.get-started-btn.login-btn');
+        const registerBtn = document.querySelector('.get-started-btn.register-btn');
+        const dashboardBtn = document.getElementById('dashboardQuickLink');
+
+        if (this.isAuthenticated && this.currentUser) {
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (registerBtn) registerBtn.style.display = 'none';
+            if (dashboardBtn) {
+                dashboardBtn.style.display = 'flex';
+                const roleMap = {
+                    'patient': 'patient-dashboard.html',
+                    'doctor': 'doctor-dashboard.html',
+                    'admin': 'admin-dashboard.html',
+                    'nurse': 'nurse-dashboard.html',
+                    'reception': 'reception-dashboard.html',
+                    'laboratory': 'laboratory-dashboard.html',
+                    'pharmacy': 'pharmacy-dashboard.html',
+                    'finance': 'finance-dashboard.html',
+                    'superadmin': 'super-admin-dashboard.html',
+                    'radiologist': 'radiology-dashboard.html',
+                    'hr': 'hr-dashboard.html',
+                    'ambulance': 'ambulance-dashboard.html'
+                };
+                dashboardBtn.href = roleMap[this.currentUser.role] || 'patient-dashboard.html';
+                const name = this.currentUser.firstName || 'Patient';
+                const strongEl = dashboardBtn.querySelector('strong');
+                if (strongEl) strongEl.textContent = `Welcome, ${name}`;
+            }
+        } else {
+            if (loginBtn) loginBtn.style.display = 'flex';
+            if (registerBtn) registerBtn.style.display = 'flex';
+            if (dashboardBtn) dashboardBtn.style.display = 'none';
+        }
     }
 
     getUser() {
