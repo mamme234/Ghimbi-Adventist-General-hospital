@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     updateAuthLinks();
+    updateGetStartedAuth();
 });
 
 // ============ Auth Tabs ============
@@ -79,17 +80,12 @@ function initAuthTabs() {
 
 // ============ Login Form ============
 function initLoginForm() {
-    const form = document.getElementById('loginForm');
-    if (!form) return;
-
     const loginBtn = document.getElementById('loginBtn');
+    if (!loginBtn) return;
 
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-
+    loginBtn.addEventListener('click', async function() {
         const identifier = document.getElementById('loginIdentifier').value.trim();
         const password = document.getElementById('loginPassword').value;
-        const rememberMe = document.getElementById('rememberMe').checked;
 
         if (!identifier || !password) {
             showToast('Please enter your login credentials.', 'warning');
@@ -124,23 +120,29 @@ function initLoginForm() {
                 }, 1500);
             }
         } catch (error) {
+            console.error('Login error:', error);
             showToast(error.message || 'Login failed. Please check your credentials.', 'error');
             loginBtn.disabled = false;
             loginBtn.innerHTML = '<span class="btn-icon">🔑</span> Sign In';
         }
     });
+
+    // Allow Enter key on login form
+    document.querySelectorAll('#loginForm input').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                loginBtn.click();
+            }
+        });
+    });
 }
 
 // ============ Signup Form ============
 function initSignupForm() {
-    const form = document.getElementById('signupForm');
-    if (!form) return;
-
     const signupBtn = document.getElementById('signupBtn');
+    if (!signupBtn) return;
 
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-
+    signupBtn.addEventListener('click', async function() {
         const firstName = document.getElementById('regFirstName').value.trim();
         const lastName = document.getElementById('regLastName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
@@ -196,10 +198,20 @@ function initSignupForm() {
                 }, 2000);
             }
         } catch (error) {
+            console.error('Signup error:', error);
             showToast(error.message || 'Registration failed. Please try again.', 'error');
             signupBtn.disabled = false;
             signupBtn.innerHTML = '<span class="btn-icon">📝</span> Create Account';
         }
+    });
+
+    // Allow Enter key on signup form
+    document.querySelectorAll('#signupForm input').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                signupBtn.click();
+            }
+        });
     });
 }
 
@@ -248,6 +260,45 @@ function updateAuthLinks() {
             <a href="#loginForm" class="nav-login">Login</a>
             <a href="#signupForm" class="nav-register">Register</a>
         `;
+    }
+}
+
+// ============ Update Get Started Auth ============
+function updateGetStartedAuth() {
+    const isLoggedIn = isAuthenticated();
+    const loginBtn = document.querySelector('.get-started-btn.login-btn');
+    const registerBtn = document.querySelector('.get-started-btn.register-btn');
+    const dashboardBtn = document.getElementById('dashboardQuickLink');
+
+    if (isLoggedIn) {
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (registerBtn) registerBtn.style.display = 'none';
+        if (dashboardBtn) {
+            dashboardBtn.style.display = 'flex';
+            const user = getCurrentUser();
+            const roleMap = {
+                'patient': 'patient-dashboard.html',
+                'doctor': 'doctor-dashboard.html',
+                'admin': 'admin-dashboard.html',
+                'nurse': 'nurse-dashboard.html',
+                'reception': 'reception-dashboard.html',
+                'laboratory': 'laboratory-dashboard.html',
+                'pharmacy': 'pharmacy-dashboard.html',
+                'finance': 'finance-dashboard.html',
+                'superadmin': 'super-admin-dashboard.html',
+                'radiologist': 'radiology-dashboard.html',
+                'hr': 'hr-dashboard.html',
+                'ambulance': 'ambulance-dashboard.html'
+            };
+            dashboardBtn.href = roleMap[user?.role] || 'patient-dashboard.html';
+            const name = user?.firstName || 'Patient';
+            const strongEl = dashboardBtn.querySelector('strong');
+            if (strongEl) strongEl.textContent = `Welcome, ${name}`;
+        }
+    } else {
+        if (loginBtn) loginBtn.style.display = 'flex';
+        if (registerBtn) registerBtn.style.display = 'flex';
+        if (dashboardBtn) dashboardBtn.style.display = 'none';
     }
 }
 
@@ -499,7 +550,7 @@ function initAIAssistant() {
             return `We have Emergency, Surgery, Pediatrics, Maternity, Internal Medicine, Dental, Eye Clinic, Pharmacy, Laboratory, Radiology, Cardiology, and Orthopedics.`;
         }
         if (lower.includes('appointment') || lower.includes('book')) {
-            return `To book an appointment, click the "Book Appointment" button above or scroll to the Appointment section.`;
+            return `To book an appointment, click the "Book Appointment" button above.`;
         }
         if (lower.includes('doctor')) {
             return `View our featured doctors below in the "Featured Doctors" section.`;
