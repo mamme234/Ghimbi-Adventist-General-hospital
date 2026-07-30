@@ -1,6 +1,6 @@
 // ============================================
 // GIMBIE ADVENTIST GENERAL HOSPITAL
-// API ROUTES
+// API ROUTES - Updated
 // ============================================
 
 const express = require('express');
@@ -8,92 +8,57 @@ const router = express.Router();
 
 // Import controllers
 const {
-  // Auth Controllers
   register, login, logout, refreshToken, verifyEmail, 
   forgotPassword, resetPassword, changePassword,
   qrLogin, verify2FA,
-  
-  // Patient Controllers
   getPatients, getPatient, createPatient, updatePatient, deletePatient,
   searchPatients, getPatientByMRN, getPatientByQR,
-  
-  // Doctor Controllers
   getDoctors, getDoctor, createDoctor, updateDoctor, deleteDoctor,
   getDoctorAppointments, getDoctorPatients,
-  
-  // Appointment Controllers
   getAppointments, getAppointment, createAppointment, updateAppointment, 
   cancelAppointment, confirmAppointment, rescheduleAppointment,
   getAppointmentsByPatient, getAppointmentsByDoctor,
-  
-  // Prescription Controllers
   getPrescriptions, getPrescription, createPrescription, updatePrescription,
   verifyPrescription, dispensePrescription,
-  
-  // Laboratory Controllers
   getLabTests, getLabTest, createLabTest, updateLabTest,
   processLabTest, getLabResults,
-  
-  // Radiology Controllers
   getRadiologyTests, getRadiologyTest, createRadiologyTest,
   updateRadiologyTest, getRadiologyResults,
-  
-  // Pharmacy Controllers
   getMedicines, getMedicine, createMedicine, updateMedicine, deleteMedicine,
   getInventory, updateInventory, getLowStock,
-  
-  // Finance Controllers
   getInvoices, getInvoice, createInvoice, updateInvoice,
   processPayment, getRevenue,
-  
-  // HR Controllers
   getStaff, getStaffMember, createStaff, updateStaff, deleteStaff,
   getAttendance, markAttendance, getPayroll,
-  
-  // Ambulance Controllers
   getAmbulanceRequests, getAmbulanceRequest, createAmbulanceRequest,
   updateAmbulanceStatus, dispatchAmbulance,
-  
-  // Admin Controllers
   getDashboardStats, getAuditLogs, getSystemSettings,
   updateSystemSettings, backupDatabase, restoreDatabase,
-  
-  // Report Controllers
   generateReport, exportReport,
-  
-  // Analytics Controllers
   getAnalytics, getMetrics,
-  
-  // AI Controllers
   aiChat, aiSymptomCheck, aiSummarize,
-  
-  // Communication
   sendMessage, getMessages,
-  
-  // Upload
   uploadFile, deleteFile,
-  
-  // Search
   globalSearch,
+  getDepartments, getServices, getNews, getGallery,
 } = require('./controllers');
 
 // Import middleware
-const { protect, authorize, verifyToken } = require('./auth');
+const { protect, authorize } = require('./auth');
 const { validate } = require('./validator');
-const { upload } = require('./upload');
-const { rateLimiter } = require('./middleware');
+const { limiter, strictLimiter } = require('./middleware');
 
 // ============================================
 // AUTH ROUTES (Public)
 // ============================================
-router.post('/auth/register', validate('register'), register);
-router.post('/auth/login', rateLimiter, validate('login'), login);
+router.post('/auth/register', validate(register), register);
+router.post('/auth/login', strictLimiter, validate(login), login);
 router.post('/auth/logout', protect, logout);
 router.post('/auth/refresh', refreshToken);
 router.post('/auth/verify-email', verifyEmail);
-router.post('/auth/forgot-password', forgotPassword);
+router.post('/auth/forgot-password', validate(passwordReset), forgotPassword);
 router.post('/auth/reset-password', resetPassword);
-router.post('/auth/change-password', protect, changePassword);
+router.post('/auth/change-password', protect, validate(passwordChange), changePassword);
 router.post('/auth/qr-login', qrLogin);
 router.post('/auth/verify-2fa', verify2FA);
 router.get('/auth/me', protect, (req, res) => res.json(req.user));
@@ -102,12 +67,12 @@ router.get('/auth/me', protect, (req, res) => res.json(req.user));
 // PATIENT ROUTES
 // ============================================
 router.get('/patients', protect, authorize('admin', 'doctor', 'reception'), getPatients);
-router.get('/patients/search', protect, searchPatients);
+router.get('/patients/search', protect, validate(search), searchPatients);
 router.get('/patients/mrn/:mrn', protect, getPatientByMRN);
 router.get('/patients/qr/:qrCode', protect, getPatientByQR);
 router.get('/patients/:id', protect, getPatient);
-router.post('/patients', protect, authorize('admin', 'reception'), validate('patient'), createPatient);
-router.put('/patients/:id', protect, authorize('admin', 'reception'), updatePatient);
+router.post('/patients', protect, authorize('admin', 'reception'), validate(patient), createPatient);
+router.put('/patients/:id', protect, authorize('admin', 'reception'), validate(patient), updatePatient);
 router.delete('/patients/:id', protect, authorize('admin'), deletePatient);
 
 // ============================================
@@ -115,8 +80,8 @@ router.delete('/patients/:id', protect, authorize('admin'), deletePatient);
 // ============================================
 router.get('/doctors', getDoctors);
 router.get('/doctors/:id', getDoctor);
-router.post('/doctors', protect, authorize('admin'), createDoctor);
-router.put('/doctors/:id', protect, authorize('admin'), updateDoctor);
+router.post('/doctors', protect, authorize('admin'), validate(staff), createDoctor);
+router.put('/doctors/:id', protect, authorize('admin'), validate(staff), updateDoctor);
 router.delete('/doctors/:id', protect, authorize('admin'), deleteDoctor);
 router.get('/doctors/:id/appointments', protect, getDoctorAppointments);
 router.get('/doctors/:id/patients', protect, getDoctorPatients);
@@ -127,52 +92,52 @@ router.get('/doctors/:id/patients', protect, getDoctorPatients);
 router.get('/appointments', protect, getAppointments);
 router.get('/appointments/patient/:patientId', protect, getAppointmentsByPatient);
 router.get('/appointments/doctor/:doctorId', protect, getAppointmentsByDoctor);
-router.get('/appointments/:id', protect, getAppointment);
-router.post('/appointments', protect, validate('appointment'), createAppointment);
-router.put('/appointments/:id', protect, updateAppointment);
-router.patch('/appointments/:id/cancel', protect, cancelAppointment);
-router.patch('/appointments/:id/confirm', protect, authorize('admin', 'reception'), confirmAppointment);
-router.patch('/appointments/:id/reschedule', protect, rescheduleAppointment);
+router.get('/appointments/:id', protect, validate(id), getAppointment);
+router.post('/appointments', protect, validate(appointment), createAppointment);
+router.put('/appointments/:id', protect, validate(id), validate(appointment), updateAppointment);
+router.patch('/appointments/:id/cancel', protect, validate(id), cancelAppointment);
+router.patch('/appointments/:id/confirm', protect, authorize('admin', 'reception'), validate(id), confirmAppointment);
+router.patch('/appointments/:id/reschedule', protect, validate(id), rescheduleAppointment);
 
 // ============================================
 // PRESCRIPTION ROUTES
 // ============================================
 router.get('/prescriptions', protect, getPrescriptions);
-router.get('/prescriptions/:id', protect, getPrescription);
-router.post('/prescriptions', protect, authorize('doctor'), validate('prescription'), createPrescription);
-router.put('/prescriptions/:id', protect, authorize('doctor'), updatePrescription);
-router.patch('/prescriptions/:id/verify', protect, authorize('pharmacist'), verifyPrescription);
-router.patch('/prescriptions/:id/dispense', protect, authorize('pharmacist'), dispensePrescription);
+router.get('/prescriptions/:id', protect, validate(id), getPrescription);
+router.post('/prescriptions', protect, authorize('doctor'), validate(prescription), createPrescription);
+router.put('/prescriptions/:id', protect, authorize('doctor'), validate(id), updatePrescription);
+router.patch('/prescriptions/:id/verify', protect, authorize('pharmacist'), validate(id), verifyPrescription);
+router.patch('/prescriptions/:id/dispense', protect, authorize('pharmacist'), validate(id), dispensePrescription);
 
 // ============================================
 // LABORATORY ROUTES
 // ============================================
 router.get('/lab-tests', protect, getLabTests);
-router.get('/lab-tests/:id', protect, getLabTest);
-router.post('/lab-tests', protect, authorize('doctor', 'lab'), createLabTest);
-router.put('/lab-tests/:id', protect, authorize('lab'), updateLabTest);
-router.patch('/lab-tests/:id/process', protect, authorize('lab'), processLabTest);
-router.get('/lab-tests/:id/results', protect, getLabResults);
+router.get('/lab-tests/:id', protect, validate(id), getLabTest);
+router.post('/lab-tests', protect, authorize('doctor', 'lab'), validate(labTest), createLabTest);
+router.put('/lab-tests/:id', protect, authorize('lab'), validate(id), updateLabTest);
+router.patch('/lab-tests/:id/process', protect, authorize('lab'), validate(id), processLabTest);
+router.get('/lab-tests/:id/results', protect, validate(id), getLabResults);
 
 // ============================================
 // RADIOLOGY ROUTES
 // ============================================
 router.get('/radiology-tests', protect, getRadiologyTests);
-router.get('/radiology-tests/:id', protect, getRadiologyTest);
+router.get('/radiology-tests/:id', protect, validate(id), getRadiologyTest);
 router.post('/radiology-tests', protect, authorize('doctor', 'radiologist'), createRadiologyTest);
-router.put('/radiology-tests/:id', protect, authorize('radiologist'), updateRadiologyTest);
-router.get('/radiology-tests/:id/results', protect, getRadiologyResults);
+router.put('/radiology-tests/:id', protect, authorize('radiologist'), validate(id), updateRadiologyTest);
+router.get('/radiology-tests/:id/results', protect, validate(id), getRadiologyResults);
 
 // ============================================
 // PHARMACY ROUTES
 // ============================================
 router.get('/medicines', getMedicines);
 router.get('/medicines/:id', getMedicine);
-router.post('/medicines', protect, authorize('admin', 'pharmacist'), createMedicine);
-router.put('/medicines/:id', protect, authorize('admin', 'pharmacist'), updateMedicine);
-router.delete('/medicines/:id', protect, authorize('admin'), deleteMedicine);
-router.get('/inventory', protect, getInventory);
-router.patch('/inventory/:id', protect, authorize('pharmacist'), updateInventory);
+router.post('/medicines', protect, authorize('admin', 'pharmacist'), validate(medicine), createMedicine);
+router.put('/medicines/:id', protect, authorize('admin', 'pharmacist'), validate(id), validate(medicine), updateMedicine);
+router.delete('/medicines/:id', protect, authorize('admin'), validate(id), deleteMedicine);
+router.get('/inventory', protect, authorize('pharmacist'), getInventory);
+router.patch('/inventory/:id', protect, authorize('pharmacist'), validate(id), updateInventory);
 router.get('/inventory/low-stock', protect, authorize('pharmacist'), getLowStock);
 
 // ============================================
@@ -180,8 +145,8 @@ router.get('/inventory/low-stock', protect, authorize('pharmacist'), getLowStock
 // ============================================
 router.get('/invoices', protect, getInvoices);
 router.get('/invoices/:id', protect, getInvoice);
-router.post('/invoices', protect, authorize('admin', 'finance'), createInvoice);
-router.put('/invoices/:id', protect, authorize('finance'), updateInvoice);
+router.post('/invoices', protect, authorize('admin', 'finance'), validate(invoice), createInvoice);
+router.put('/invoices/:id', protect, authorize('finance'), validate(id), updateInvoice);
 router.post('/payments', protect, processPayment);
 router.get('/revenue', protect, authorize('admin', 'finance'), getRevenue);
 
@@ -190,9 +155,9 @@ router.get('/revenue', protect, authorize('admin', 'finance'), getRevenue);
 // ============================================
 router.get('/staff', protect, authorize('admin', 'hr'), getStaff);
 router.get('/staff/:id', protect, authorize('admin', 'hr'), getStaffMember);
-router.post('/staff', protect, authorize('admin', 'hr'), createStaff);
-router.put('/staff/:id', protect, authorize('admin', 'hr'), updateStaff);
-router.delete('/staff/:id', protect, authorize('admin'), deleteStaff);
+router.post('/staff', protect, authorize('admin', 'hr'), validate(staff), createStaff);
+router.put('/staff/:id', protect, authorize('admin', 'hr'), validate(id), updateStaff);
+router.delete('/staff/:id', protect, authorize('admin'), validate(id), deleteStaff);
 router.get('/attendance', protect, authorize('admin', 'hr'), getAttendance);
 router.post('/attendance', protect, authorize('hr'), markAttendance);
 router.get('/payroll', protect, authorize('admin', 'hr'), getPayroll);
@@ -202,9 +167,9 @@ router.get('/payroll', protect, authorize('admin', 'hr'), getPayroll);
 // ============================================
 router.get('/ambulance', protect, getAmbulanceRequests);
 router.get('/ambulance/:id', protect, getAmbulanceRequest);
-router.post('/ambulance', protect, createAmbulanceRequest);
-router.patch('/ambulance/:id/status', protect, authorize('ambulance'), updateAmbulanceStatus);
-router.patch('/ambulance/:id/dispatch', protect, authorize('ambulance'), dispatchAmbulance);
+router.post('/ambulance', createAmbulanceRequest);
+router.patch('/ambulance/:id/status', protect, authorize('ambulance'), validate(id), updateAmbulanceStatus);
+router.patch('/ambulance/:id/dispatch', protect, authorize('ambulance'), validate(id), dispatchAmbulance);
 
 // ============================================
 // ADMIN ROUTES
@@ -244,13 +209,13 @@ router.get('/messages', protect, getMessages);
 // ============================================
 // UPLOAD ROUTES
 // ============================================
-router.post('/upload', protect, upload.single('file'), uploadFile);
+router.post('/upload', protect, uploadFile);
 router.delete('/upload/:id', protect, deleteFile);
 
 // ============================================
 // SEARCH ROUTES
 // ============================================
-router.get('/search', protect, globalSearch);
+router.get('/search', protect, validate(search), globalSearch);
 
 // ============================================
 // WEBSITE PUBLIC ROUTES
