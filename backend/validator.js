@@ -6,13 +6,21 @@
 const { body, param, query, validationResult } = require('express-validator');
 
 // ============================================
-// VALIDATION RULES
+// VALIDATION MIDDLEWARE
 // ============================================
 
-exports.validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
+// This is the correct validate function - it returns a middleware
+exports.validate = (validations) => {
+  return async (req, res, next) => {
+    // Run all validations
+    await Promise.all(validations.map(validation => validation.run(req)));
+
+    const errors = validationResult(req);
+    if (errors.isEmpty()) {
+      return next();
+    }
+
+    res.status(400).json({
       success: false,
       message: 'Validation Error',
       errors: errors.array().map(err => ({
@@ -21,15 +29,14 @@ exports.validate = (req, res, next) => {
         value: err.value,
       })),
     });
-  }
-  next();
+  };
 };
 
 // ============================================
-// AUTH VALIDATION
+// AUTH VALIDATION RULES
 // ============================================
 
-exports.registerValidation = [
+exports.register = [
   body('fullName')
     .trim()
     .notEmpty().withMessage('Full name is required')
@@ -58,7 +65,7 @@ exports.registerValidation = [
            'admin', 'super-admin']).withMessage('Invalid role selected'),
 ];
 
-exports.loginValidation = [
+exports.login = [
   body('email')
     .trim()
     .notEmpty().withMessage('Email is required')
@@ -68,14 +75,14 @@ exports.loginValidation = [
     .notEmpty().withMessage('Password is required'),
 ];
 
-exports.passwordResetValidation = [
+exports.passwordReset = [
   body('email')
     .trim()
     .notEmpty().withMessage('Email is required')
     .isEmail().withMessage('Please provide a valid email'),
 ];
 
-exports.passwordChangeValidation = [
+exports.passwordChange = [
   body('currentPassword')
     .notEmpty().withMessage('Current password is required'),
   
@@ -86,10 +93,10 @@ exports.passwordChangeValidation = [
 ];
 
 // ============================================
-// PATIENT VALIDATION
+// PATIENT VALIDATION RULES
 // ============================================
 
-exports.patientValidation = [
+exports.patient = [
   body('userId')
     .notEmpty().withMessage('User ID is required')
     .isMongoId().withMessage('Invalid user ID'),
@@ -106,23 +113,13 @@ exports.patientValidation = [
   body('emergencyContact.phone')
     .optional()
     .matches(/^\+?[0-9]{8,15}$/).withMessage('Invalid emergency contact phone number'),
-  
-  body('insurance.provider')
-    .optional()
-    .trim()
-    .isLength({ min: 2 }).withMessage('Insurance provider name must be at least 2 characters'),
-  
-  body('insurance.policyNumber')
-    .optional()
-    .trim()
-    .isLength({ min: 2 }).withMessage('Policy number is required'),
 ];
 
 // ============================================
-// APPOINTMENT VALIDATION
+// APPOINTMENT VALIDATION RULES
 // ============================================
 
-exports.appointmentValidation = [
+exports.appointment = [
   body('patientId')
     .notEmpty().withMessage('Patient ID is required'),
   
@@ -152,17 +149,13 @@ exports.appointmentValidation = [
   body('type')
     .optional()
     .isIn(['in-person', 'telemedicine', 'follow-up', 'emergency']).withMessage('Invalid appointment type'),
-  
-  body('priority')
-    .optional()
-    .isIn(['low', 'medium', 'high', 'urgent']).withMessage('Invalid priority level'),
 ];
 
 // ============================================
-// PRESCRIPTION VALIDATION
+// PRESCRIPTION VALIDATION RULES
 // ============================================
 
-exports.prescriptionValidation = [
+exports.prescription = [
   body('patientId')
     .notEmpty().withMessage('Patient ID is required'),
   
@@ -180,10 +173,6 @@ exports.prescriptionValidation = [
   body('medicines.*.frequency')
     .trim()
     .notEmpty().withMessage('Frequency is required'),
-  
-  body('medicines.*.duration')
-    .trim()
-    .notEmpty().withMessage('Duration is required'),
   
   body('validUntil')
     .notEmpty().withMessage('Valid until date is required')
@@ -203,10 +192,10 @@ exports.prescriptionValidation = [
 ];
 
 // ============================================
-// MEDICINE VALIDATION
+// MEDICINE VALIDATION RULES
 // ============================================
 
-exports.medicineValidation = [
+exports.medicine = [
   body('name')
     .trim()
     .notEmpty().withMessage('Medicine name is required')
@@ -224,21 +213,13 @@ exports.medicineValidation = [
   body('sellingPrice')
     .notEmpty().withMessage('Selling price is required')
     .isFloat({ min: 0 }).withMessage('Selling price must be a positive number'),
-  
-  body('quantityInStock')
-    .optional()
-    .isInt({ min: 0 }).withMessage('Quantity in stock must be a positive integer'),
-  
-  body('reorderLevel')
-    .optional()
-    .isInt({ min: 0 }).withMessage('Reorder level must be a positive integer'),
 ];
 
 // ============================================
-// LAB TEST VALIDATION
+// LAB TEST VALIDATION RULES
 // ============================================
 
-exports.labTestValidation = [
+exports.labTest = [
   body('patientId')
     .notEmpty().withMessage('Patient ID is required'),
   
@@ -251,17 +232,13 @@ exports.labTestValidation = [
     .notEmpty().withMessage('Test category is required')
     .isIn(['blood', 'urine', 'stool', 'imaging', 'microbiology', 'pathology', 'genetic', 'other'])
     .withMessage('Invalid test category'),
-  
-  body('priority')
-    .optional()
-    .isIn(['routine', 'urgent', 'stat']).withMessage('Invalid priority level'),
 ];
 
 // ============================================
-// INVOICE VALIDATION
+// INVOICE VALIDATION RULES
 // ============================================
 
-exports.invoiceValidation = [
+exports.invoice = [
   body('patientId')
     .notEmpty().withMessage('Patient ID is required'),
   
@@ -277,18 +254,13 @@ exports.invoiceValidation = [
   
   body('items.*.unitPrice')
     .isFloat({ min: 0 }).withMessage('Unit price must be a positive number'),
-  
-  body('paymentMethod')
-    .optional()
-    .isIn(['cash', 'card', 'insurance', 'bank-transfer', 'mobile-money', 'other'])
-    .withMessage('Invalid payment method'),
 ];
 
 // ============================================
-// STAFF VALIDATION
+// STAFF VALIDATION RULES
 // ============================================
 
-exports.staffValidation = [
+exports.staff = [
   body('userId')
     .notEmpty().withMessage('User ID is required')
     .isMongoId().withMessage('Invalid user ID'),
@@ -306,17 +278,13 @@ exports.staffValidation = [
     .optional()
     .isIn(['full-time', 'part-time', 'contract', 'intern', 'volunteer'])
     .withMessage('Invalid employment type'),
-  
-  body('salary.amount')
-    .optional()
-    .isFloat({ min: 0 }).withMessage('Salary amount must be a positive number'),
 ];
 
 // ============================================
-// AMBULANCE VALIDATION
+// AMBULANCE VALIDATION RULES
 // ============================================
 
-exports.ambulanceValidation = [
+exports.ambulance = [
   body('patientName')
     .trim()
     .notEmpty().withMessage('Patient name is required')
@@ -330,17 +298,13 @@ exports.ambulanceValidation = [
   body('pickupLocation.address')
     .trim()
     .notEmpty().withMessage('Pickup location address is required'),
-  
-  body('priority')
-    .optional()
-    .isIn(['low', 'medium', 'high', 'critical']).withMessage('Invalid priority level'),
 ];
 
 // ============================================
 // ID VALIDATION
 // ============================================
 
-exports.idValidation = [
+exports.id = [
   param('id')
     .notEmpty().withMessage('ID is required')
     .isMongoId().withMessage('Invalid ID format'),
@@ -350,7 +314,7 @@ exports.idValidation = [
 // SEARCH VALIDATION
 // ============================================
 
-exports.searchValidation = [
+exports.search = [
   query('q')
     .trim()
     .notEmpty().withMessage('Search query is required')
@@ -361,7 +325,7 @@ exports.searchValidation = [
 // DATE RANGE VALIDATION
 // ============================================
 
-exports.dateRangeValidation = [
+exports.dateRange = [
   query('startDate')
     .optional()
     .isISO8601().withMessage('Invalid start date format'),
@@ -378,24 +342,24 @@ exports.dateRangeValidation = [
 ];
 
 // ============================================
-// EXPORT ALL VALIDATIONS
+// EXPORT
 // ============================================
 
 module.exports = {
   validate: exports.validate,
-  register: exports.registerValidation,
-  login: exports.loginValidation,
-  passwordReset: exports.passwordResetValidation,
-  passwordChange: exports.passwordChangeValidation,
-  patient: exports.patientValidation,
-  appointment: exports.appointmentValidation,
-  prescription: exports.prescriptionValidation,
-  medicine: exports.medicineValidation,
-  labTest: exports.labTestValidation,
-  invoice: exports.invoiceValidation,
-  staff: exports.staffValidation,
-  ambulance: exports.ambulanceValidation,
-  id: exports.idValidation,
-  search: exports.searchValidation,
-  dateRange: exports.dateRangeValidation,
+  register: exports.register,
+  login: exports.login,
+  passwordReset: exports.passwordReset,
+  passwordChange: exports.passwordChange,
+  patient: exports.patient,
+  appointment: exports.appointment,
+  prescription: exports.prescription,
+  medicine: exports.medicine,
+  labTest: exports.labTest,
+  invoice: exports.invoice,
+  staff: exports.staff,
+  ambulance: exports.ambulance,
+  id: exports.id,
+  search: exports.search,
+  dateRange: exports.dateRange,
 };
