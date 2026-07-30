@@ -14,7 +14,11 @@ document.addEventListener('DOMContentLoaded', function() {
             'reception': 'reception-dashboard.html',
             'laboratory': 'laboratory-dashboard.html',
             'pharmacy': 'pharmacy-dashboard.html',
-            'finance': 'finance-dashboard.html'
+            'finance': 'finance-dashboard.html',
+            'superadmin': 'super-admin-dashboard.html',
+            'radiologist': 'radiology-dashboard.html',
+            'hr': 'hr-dashboard.html',
+            'ambulance': 'ambulance-dashboard.html'
         };
         window.location.href = roleMap[user.role] || 'patient-dashboard.html';
         return;
@@ -96,7 +100,6 @@ function initLoginForm() {
         loginBtn.innerHTML = '<span class="btn-icon">⏳</span> Signing In...';
 
         try {
-            // Try login with email
             const response = await api.login(identifier, password);
 
             if (response && response.token) {
@@ -111,7 +114,11 @@ function initLoginForm() {
                         'reception': 'reception-dashboard.html',
                         'laboratory': 'laboratory-dashboard.html',
                         'pharmacy': 'pharmacy-dashboard.html',
-                        'finance': 'finance-dashboard.html'
+                        'finance': 'finance-dashboard.html',
+                        'superadmin': 'super-admin-dashboard.html',
+                        'radiologist': 'radiology-dashboard.html',
+                        'hr': 'hr-dashboard.html',
+                        'ambulance': 'ambulance-dashboard.html'
                     };
                     window.location.href = roleMap[user?.role] || 'patient-dashboard.html';
                 }, 1500);
@@ -226,7 +233,11 @@ function updateAuthLinks() {
             'reception': 'reception-dashboard.html',
             'laboratory': 'laboratory-dashboard.html',
             'pharmacy': 'pharmacy-dashboard.html',
-            'finance': 'finance-dashboard.html'
+            'finance': 'finance-dashboard.html',
+            'superadmin': 'super-admin-dashboard.html',
+            'radiologist': 'radiology-dashboard.html',
+            'hr': 'hr-dashboard.html',
+            'ambulance': 'ambulance-dashboard.html'
         };
         navAuth.innerHTML = `
             <a href="${roleMap[user.role] || 'patient-dashboard.html'}" class="nav-dashboard">📊 Dashboard</a>
